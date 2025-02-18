@@ -1,7 +1,7 @@
 POST http://127.0.0.1:8000/auth/login/
 Content-Type: application/json
 
-{"username": "test", "password": "qwer1234"}
+{"email": "dskdjksj@sdskdjs.com", "password": "qwer1234"}
  
 ###
 POST http://127.0.0.1:8000/auth/signup/
