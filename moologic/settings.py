@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-szqjme@62se#a3%fq2yw8+f6tmrp5)nk^(j!8=h&zqz7a5=k8^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['moologic-backend-3.onrender.com','moologic-backend-4.onrender.com','moologic-backend-5.onrender.com','moologic-backend-6.onrender.com','moologic-backend-7.onrender.com']
+ALLOWED_HOSTS = ['moologic-backend-3.onrender.com','moologic-backend-4.onrender.com','moologic-backend-5.onrender.com','moologic-backend-6.onrender.com','moologic-backend-7.onrender.com', '127.0.0.1']
 
 
 # Application definition
@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken'
 ]
+
+AUTH_USER_MODEL = 'userauth.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
