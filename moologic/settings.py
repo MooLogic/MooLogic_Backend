@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-szqjme@62se#a3%fq2yw8+f6tmrp5)nk^(j!8=h&zqz7a5=k8^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['moologic-backend-1.onrender.com']
 
 
 # Application definition
