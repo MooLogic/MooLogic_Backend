@@ -1,0 +1,12 @@
+Django>=4.2,<5.0
+djangorestframework
+django-cors-headers
+gunicorn
+whitenoise
+psycopg2-binary  # Use this for PostgreSQL, or mysqlclient for MySQL
+Pillow  # For handling image uploads
+drf-yasg  # API documentation with Swagger
+django-environ  # For managing environment variables
+celery  # If you're using asynchronous tasks
+redis  # Required if using Celery with Redis
+channels  # For WebSocket support
