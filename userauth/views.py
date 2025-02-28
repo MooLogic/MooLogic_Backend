@@ -32,7 +32,7 @@ def signup(request):
         },
         'token': token.key
     }, status=status.HTTP_201_CREATED)
-
+ 
 
 @api_view(['POST'])
 def login(request):
