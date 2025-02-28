@@ -2,21 +2,22 @@
 from django.db import models
 
 class Cattle(models.Model):
-    # ID is implicitly handled by Django as the primary key (AutoField) unless specified otherwise
-    id = models.AutoField(primary_key=True)
-
-    # Breed of the cattle
-    breed = models.CharField(
-        max_length=100,
-        help_text="The breed of the cattle (e.g., Holstein, Jersey, Local)."
+    breed = models.CharField(max_length=100,help_text="The breed of the cattle (e.g., Holstein, Jersey, Local).", blank=True, null=True)
+    birth_date = models.DateField(help_text="The birth date of the cattle.", blank=True, null=True)
+    ear_tag_no = models.CharField(max_length=100,help_text="The ear tag number of the cattle.")
+    dam_id = models.CharField(max_length=100,help_text="The dam ID of the cattle.", blank=True, null=True)
+    sire_id = models.CharField(max_length=100,help_text="The sire ID of the cattle.", blank=True, null=True)
+    picture = models.ImageField(
+        upload_to='cattle_pictures/',
+        null=True,
+        blank=True,
+        help_text="An optional image of the cattle."
     )
+    
+    # Metadata (optional but useful for tracking)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    # Age of the cattle (assuming in months for precision, can be adjusted to years)
-    age = models.PositiveIntegerField(
-        help_text="The age of the cattle in months."
-    )
-
-    # Health status of the cattle
     HEALTH_STATUS_CHOICES = [
         ('healthy', 'Healthy'),
         ('sick', 'Sick'),
@@ -27,7 +28,9 @@ class Cattle(models.Model):
         max_length=20,
         choices=HEALTH_STATUS_CHOICES,
         default='unknown',
-        help_text="The current health status of the cattle."
+        help_text="The current health status of the cattle.",
+        blank=True, 
+        null=True
     )
 
     # Gender of the cattle
@@ -42,17 +45,7 @@ class Cattle(models.Model):
     )
 
     # Picture of the cattle (optional image field)
-    picture = models.ImageField(
-        upload_to='cattle_pictures/',
-        null=True,
-        blank=True,
-        help_text="An optional image of the cattle."
-    )
-    earTagNo = models.CharField(
-        max_length=50, blank=True, null=True)
-    # Metadata (optional but useful for tracking)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    
 
     class Meta:
         verbose_name = "Cattle"
