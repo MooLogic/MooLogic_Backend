@@ -1,0 +1,40 @@
+### Create a new cattle
+POST http://127.0.0.1:8000/core/addcattle/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "breed": "Holstein",
+  "birth_date": "2022-06-15",
+  "ear_tag_no": "123",
+  "dam_id": "5678",
+  "sire_id": "91011",
+  "picture": "http://example.com/picture.jpg",
+  "health_status": "Healthy",
+  "gender": "Female"
+}
+
+### Get all cattle
+GET http://127.0.0.1:8000/core/getallcattle/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Get cattle by ID
+GET http://127.0.0.1:8000/core/getcattlebyid/1/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Update cattle by ID
+PUT http://127.0.0.1:8000/core/updatecattle/1/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "health_status": "Sick",
+  "breed": "Jersey"
+}
+
+### Delete cattle by ID
+DELETE http://127.0.0.1:8000/core/deletecattle/5/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035

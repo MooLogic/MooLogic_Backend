@@ -1,0 +1,47 @@
+POST http://127.0.0.1:8000/milk/add-milk-record/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+    "cattle_tag": "2",
+    "quantity": 5.5,
+    "time": "12:00"
+
+}
+
+###
+GET http://127.0.0.1:8000/milk/milk-records/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+###
+GET http://127.0.0.1:8000/milk/milk-production/2/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+###
+GET http://127.0.0.1:8000/milk/milk-production/last-7-days/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+###
+GET http://127.0.0.1:8000/milk/milk-production/last-30-days/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+###
+GET http://127.0.0.1:8000/milk/milk-production/last-90-days/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+###
+GET http://127.0.0.1:8000/milk/milk-production/last-300-days/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+###
+GET http://127.0.0.1:8000/milk/farm-production/last-7-days/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+###
+GET http://127.0.0.1:8000/milk/farm-production/last-30-days/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+###
+GET http://127.0.0.1:8000/milk/farm-production/last-90-days/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+

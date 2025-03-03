@@ -59,10 +59,11 @@ def get_milk_production(cattle_id, days):
         Milk_record.objects
         .filter(cattle_tag=cattle_id, date__gte=start_date)
         .values('date')  # Group by date
-        .annotate(total_production=Sum('production'))  # Sum milk production per day
+        .annotate(total_production=Sum('quantity'))  # Sum milk production per day
         .order_by('-date')
     )
     return milk_records
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -86,17 +87,31 @@ def milk_production_by_cattle_last_300_days(request, cattle_id):
 
 
 # Functions for overall farm production
+
+def get_farm_milk_production(days):
+    """
+    Get milk production grouped by date for the last `days` days.
+    """
+    start_date = now().date() - timedelta(days=days)
+    milk_records = (
+        Milk_record.objects
+        .filter( date__gte=start_date)
+        .values('date')  # Group by date
+        .annotate(total_production=Sum('quantity'))  # Sum milk production per day
+        .order_by('-date')
+    )
+    return milk_records
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def farm_production_last_7_days(request):
-    return Response(get_milk_production(None, 7))
+    return Response(get_farm_milk_production(7))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def farm_production_last_30_days(request):
-    return Response(get_milk_production(None, 30))
+    return Response(get_farm_milk_production( 30))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def farm_production_last_90_days(request):
-    return Response(get_milk_production(None, 90))
+    return Response(get_farm_milk_production(90))
