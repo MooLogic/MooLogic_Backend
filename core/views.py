@@ -27,7 +27,7 @@ def create_cattle(request):
     health_status = request.data.get('health_status')
     gender = request.data.get('gender')
     
-    # Check if the input consists of the necessary fields i.e (ear_tag_no, gender)
+    # Check if the input consists of the necessary fields i.e (ear_tag_no, gender) 
     if not ear_tag_no or not gender:
         return Response({'error': 'At least Ear_tag_number and gender are required to register cattle!'}, status=status.HTTP_400_BAD_REQUEST)
 
