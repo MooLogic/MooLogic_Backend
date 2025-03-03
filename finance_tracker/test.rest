@@ -1,0 +1,40 @@
+# Create a Financial Record (equivalent to test_create_financial_record)
+POST http://127.0.0.1:8000/api/financial/records/
+Content-Type: application/json
+Authorization: Token 60d373d4b7ef33480cc69c689af6ed7cc31f8d98
+
+{
+  "farm_id": 2,
+  "category_id": 3,
+  "amount": "1000.00",
+  "description": "Milk sales"
+}
+###
+
+# List Financial Records (equivalent to test_list_financial_records)
+GET http://127.0.0.1:8000/api/financial/records/
+Content-Type: application/json
+Authorization: Token 60d373d4b7ef33480cc69c689af6ed7cc31f8d98
+###
+
+# Get Financial Summary (equivalent to test_financial_summary)
+GET http://127.0.0.1:8000/api/financial/records/summary/
+Content-Type: application/json
+Authorization: Token 60d373d4b7ef33480cc69c689af6ed7cc31f8d98
+###
+
+# Generate Profit Snapshot (equivalent to test_generate_profit_snapshot)
+POST http://127.0.0.1:8000/api/financial/profit-snapshots/generate_snapshot/
+Content-Type: application/json
+
+{
+  "farm_id": 2
+}
+
+# Test with Invalid Farm ID (similar to error case in tests)
+POST http://127.0.0.1:8000/api/financial/profit-snapshots/generate_snapshot/
+Content-Type: application/json
+
+{
+  "farm_id": 999
+}
