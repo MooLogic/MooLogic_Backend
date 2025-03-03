@@ -6,4 +6,4 @@ class CattleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cattle
         fields = '__all__'
-        
+         
