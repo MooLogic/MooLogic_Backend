@@ -5,7 +5,7 @@ from core.models import Cattle
 
 class Milk_record(models.Model):
     cattle_tag = models.ForeignKey(Cattle, on_delete=models.CASCADE)
-    date = models.DateField()
+    date = models.DateField(auto_now_add=True)
     time= models.TimeField()
     quantity = models.FloatField()
 

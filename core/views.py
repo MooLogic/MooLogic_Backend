@@ -11,30 +11,35 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Cattle  # Make sure to import the Cattle model
 
+from datetime import datetime
+
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])  # This ensures only authenticated users can access the view
+@permission_classes([IsAuthenticated])
 def create_cattle(request):
     """
     Create a new cattle.
     """
-
     breed = request.data.get('breed')
-    birth_date = request.data.get('birth_date')
+    birth_date_str = request.data.get('birth_date')
     ear_tag_no = request.data.get('ear_tag_no')
     dam_id = request.data.get('dam_id')
     sire_id = request.data.get('sire_id')
     picture = request.data.get('picture')
     health_status = request.data.get('health_status')
     gender = request.data.get('gender')
-    
-    # Check if the input consists of the necessary fields i.e (ear_tag_no, gender) 
+
     if not ear_tag_no or not gender:
         return Response({'error': 'At least Ear_tag_number and gender are required to register cattle!'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Check if the cattle with this ear tag number already exists
     if Cattle.objects.filter(ear_tag_no=ear_tag_no).exists():
         return Response({'error': 'Cattle with this ear tag number already exists!'}, status=status.HTTP_400_BAD_REQUEST)
-    
+
+    # Convert the birth_date string to a datetime object
+    try:
+        birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d')
+    except ValueError:
+        return Response({'error': 'Invalid birth date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+
     # Create a new cattle object
     new_cattle = Cattle.objects.create(
         breed=breed,
@@ -44,7 +49,7 @@ def create_cattle(request):
         sire_id=sire_id,
         picture=picture,
         health_status=health_status,
-        gender=gender,  # Ensure to include gender
+        gender=gender,
     )
     
     # Save the cattle object
@@ -54,7 +59,7 @@ def create_cattle(request):
         'id': new_cattle.id,
         'ear_tag_no': new_cattle.ear_tag_no,
         'breed': new_cattle.breed,
-        'birth_date': new_cattle.birth_date.strftime('%Y-%m-%d'),
+        'birth_date': new_cattle.birth_date.strftime('%Y-%m-%d'),  # Now birth_date is a datetime object
         'dam_id': new_cattle.dam_id,
         'sire_id': new_cattle.sire_id,
         'picture': new_cattle.picture.url,
@@ -63,7 +68,6 @@ def create_cattle(request):
         'created_at': new_cattle.created_at.strftime('%Y-%m-%d %H:%M:%S'),
     }, status=status.HTTP_201_CREATED)
 
-    
 #api view to get all cattle
 @api_view(['GET'])
 def get_all_cattle(request):

@@ -23,6 +23,7 @@ urlpatterns = [
     path("auth/", include("userauth.urls")),
     path('api/financial/', include('finance_tracker.urls')),
     path("core/", include("core.urls")),
+    path('milk/', include('milk_tracker.urls')),
 
     
 ]
