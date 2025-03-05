@@ -1,40 +1,76 @@
-# Create a Financial Record (equivalent to test_create_financial_record)
-POST http://127.0.0.1:8000/api/financial/records/
-Content-Type: application/json
-Authorization: Token 60d373d4b7ef33480cc69c689af6ed7cc31f8d98
-
-{
-  "farm_id": 2,
-  "category_id": 3,
-  "amount": "1000.00",
-  "description": "Milk sales"
-}
-###
-
-# List Financial Records (equivalent to test_list_financial_records)
+# 1. Financial Records (General List)
 GET http://127.0.0.1:8000/api/financial/records/
 Content-Type: application/json
-Authorization: Token 60d373d4b7ef33480cc69c689af6ed7cc31f8d98
+Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
 ###
+# 2. Financial Records (List with Farm Filter)
+GET http://127.0.0.1:8000/api/financial/records/?farm_id=5
+Content-Type: application/json
+Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+###
+# 3. Create an Income Record
+POST http://127.0.0.1:8000/api/financial/records/income/
+Content-Type: application/json
+Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
 
-# Get Financial Summary (equivalent to test_financial_summary)
+{
+  "farm_id": 5,
+  "category_name": "Milk Sales",
+  "amount": "1200.50",
+  "description": "Sales from this week's milk production"
+}
+###
+# 4. Create an Expense Record
+POST http://127.0.0.1:8000/api/financial/records/expense/
+Content-Type: application/json
+Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "farm_id": 5,
+  "category_name": "Animal Feed",
+  "amount": "650.00",
+  "description": "Purchased animal feed from the local supplier"
+}
+
+###
+# 5. Get Financial Summary
+GET http://127.0.0.1:8000/api/financial/records/summary/?farm_id=5
+Content-Type: application/json
+Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+
+###
+# 6. Get Financial Summary (Invalid Farm ID)
+GET http://127.0.0.1:8000/api/financial/records/summary/?farm_id=9999
+Content-Type: application/json
+Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+
+###
+# 7. Get Financial Summary (Missing Farm ID)
 GET http://127.0.0.1:8000/api/financial/records/summary/
 Content-Type: application/json
-Authorization: Token 60d373d4b7ef33480cc69c689af6ed7cc31f8d98
+Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
 ###
-
-# Generate Profit Snapshot (equivalent to test_generate_profit_snapshot)
+# 8. Generate Profit Snapshot
 POST http://127.0.0.1:8000/api/financial/profit-snapshots/generate_snapshot/
 Content-Type: application/json
+#Authorization: Token  # Token is not used for authorization here
 
 {
-  "farm_id": 2
+  "farm_id": 5
 }
 
-# Test with Invalid Farm ID (similar to error case in tests)
+
+###
+# 9. Generate Profit Snapshot (Invalid Farm ID)
 POST http://127.0.0.1:8000/api/financial/profit-snapshots/generate_snapshot/
 Content-Type: application/json
+#Authorization: Token   # Token is not used for authorization here
 
 {
-  "farm_id": 999
+  "farm_id": 9999
 }
+
+# Expected Result: 404 Not Found, error message: "Farm not found"
