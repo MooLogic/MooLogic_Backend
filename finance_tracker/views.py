@@ -1,5 +1,3 @@
-#views.py
-
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -77,7 +75,6 @@ class FinancialRecordViewSet(viewsets.ModelViewSet):
         except Farm.DoesNotExist:
             return Response({"error": "Farm not found"}, status=status.HTTP_404_NOT_FOUND)
 
-
         queryset = FinancialRecord.objects.filter(farm=farm, recorded_by=self.request.user) # Records only for this user
         total_income = queryset.filter(category__is_income=True).aggregate(Sum('amount'))['amount__sum'] or 0
         total_expense = queryset.filter(category__is_income=False).aggregate(Sum('amount'))['amount__sum'] or 0
@@ -89,6 +86,38 @@ class FinancialRecordViewSet(viewsets.ModelViewSet):
             'profitability': profitability,
             'calculated_on': date.today()
         })
+
+    # New endpoint for profit alert
+    @action(detail=False, methods=['get'])
+    def profit_alert(self, request):
+        farm_id = request.query_params.get('farm_id')
+        if not farm_id:
+            return Response({"error": "farm_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            farm = Farm.objects.get(id=farm_id)
+        except Farm.DoesNotExist:
+            return Response({"error": "Farm not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Calculate profitability based on user's records
+        queryset = FinancialRecord.objects.filter(farm=farm, recorded_by=self.request.user)
+        total_income = queryset.filter(category__is_income=True).aggregate(Sum('amount'))['amount__sum'] or 0
+        total_expense = queryset.filter(category__is_income=False).aggregate(Sum('amount'))['amount__sum'] or 0
+        profitability = total_income - total_expense
+
+        # Check if profit is negative and return appropriate response
+        if profitability < 0:
+            return Response({
+                "alert": "Warning: The farm is not in a profitable state.",
+                "profitability": profitability,
+                "checked_on": date.today()
+            })
+        else:
+            return Response({
+                "message": "The farm is in a profitable state.",
+                "profitability": profitability,
+                "checked_on": date.today()
+            })
 
 class ProfitSnapshotViewSet(viewsets.ModelViewSet):
     serializer_class = ProfitSnapshotSerializer
