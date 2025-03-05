@@ -28,7 +28,7 @@ Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
 {
   "farm_id": 5,
   "category_name": "Animal Feed",
-  "amount": "650.00",
+  "amount": "1650.00",
   "description": "Purchased animal feed from the local supplier"
 }
 
@@ -74,3 +74,9 @@ Content-Type: application/json
 }
 
 # Expected Result: 404 Not Found, error message: "Farm not found"
+
+#10 Alert when the profit goes negative 
+###
+GET http://127.0.0.1:8000/api/financial/records/profit_alert/?farm_id=5
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
