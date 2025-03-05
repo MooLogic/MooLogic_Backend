@@ -6,7 +6,7 @@ Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
 {
   "breed": "Holstein",
   "birth_date": "2022-06-15",
-  "ear_tag_no": "123",
+  "ear_tag_no": "72",
   "dam_id": "5678",
   "sire_id": "91011",
   "picture": "http://example.com/picture.jpg",

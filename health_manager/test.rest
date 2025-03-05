@@ -1,0 +1,107 @@
+### Create a treatment record
+POST http://127.0.0.1:8000/health/trecords/create/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "veterinarian": 1,
+  "treatment_name": "Deworming  cc",
+  "treatment_description": "Regular deworming treatment",
+  "treatment_date": "2024-03-05",
+  "treatment_cost": 50.00
+}
+
+### Get all treatment records
+GET http://127.0.0.1:8000/health/trecords/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Get a treatment record by ID
+GET http://127.0.0.1:8000/health/trecords/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Update a treatment record
+PUT http://127.0.0.1:8000/health/trecords/1/update/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "treatment_name": "Updated Deworming",
+  "treatment_description": "Updated description",
+  "treatment_date": "2024-03-05",
+  "treatment_cost": 55.00
+}
+
+### Delete a treatment record
+DELETE http://127.0.0.1:8000/health/trecords/1/delete/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+
+### Create a vaccination record
+POST http://127.0.0.1:8000/health/vrecords/create/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "veterinarian": 1,
+  "vaccination_name": "Rabies",
+  "vaccination_date": "2024-03-01",
+  "vaccination_cost": 100.00
+}
+
+### Get all vaccination records
+GET http://127.0.0.1:8000/health/vrecords/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Get a vaccination record by ID
+GET http://127.0.0.1:8000/health/vrecords/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Update a vaccination record
+PUT http://127.0.0.1:8000/health/vrecords/1/update/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "vaccination_name": "Updated Rabies",
+  "vaccination_date": "2024-03-02",
+  "vaccination_cost": 110.00
+}
+
+### Delete a vaccination record
+DELETE http://127.0.0.1:8000/health/vrecords/1/delete/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+
+### Create a periodic vaccination record
+POST http://127.0.0.1:8000/health/pvrecords/create/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "veterinarian": 1,
+  "vaccination_name": "Annual Rabies",
+  "last_vaccination_date": "2024-01-01",
+  "interval_days": 365
+}
+
+### Get all periodic vaccination records
+GET http://127.0.0.1:8000/health/pvrecords/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Get a periodic vaccination record by ID
+GET http://127.0.0.1:8000/health/pvrecords/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Update a periodic vaccination record
+PUT http://127.0.0.1:8000/health/pvrecords/1/update/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "last_vaccination_date": "2024-02-01",
+  "interval_days": 365
+}
+
+### Delete a periodic vaccination record
+DELETE http://127.0.0.1:8000/health/pvrecords/1/delete/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
