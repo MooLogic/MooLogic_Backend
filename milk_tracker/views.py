@@ -35,7 +35,6 @@ def milk_production_by_cattle(request, cattle_id):
     
 # function to add new milk records
 @api_view(['POST'])
-
 @permission_classes([IsAuthenticated])
 def add_milk_record(request):
     """
