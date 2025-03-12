@@ -61,6 +61,7 @@ def get_milk_production(cattle_id, days):
         .annotate(total_production=Sum('quantity'))  # Sum milk production per day
         .order_by('-date')
     )
+    
     return milk_records
 
 
