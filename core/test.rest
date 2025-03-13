@@ -1,40 +1,120 @@
-### Create a new cattle
-POST http://127.0.0.1:8000/core/addcattle/
+# Test for creating a new Cattle
+POST http://127.0.0.1:8000/core/cattle/
 Content-Type: application/json
 Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
 
 {
+  "ear_tag_no": "ET1235",
   "breed": "Holstein",
   "birth_date": "2022-06-15",
-  "ear_tag_no": "72",
-  "dam_id": "5678",
-  "sire_id": "91011",
-  "picture": "http://example.com/picture.jpg",
-  "health_status": "Healthy",
-  "gender": "Female"
+  "gender": "female",
+  "gestation_status": "pregnant",
+  "health_status": "healthy",
+  "last_insemination_date": "2025-02-05",
+  "last_calving_date": "2023-10-05"
 }
 
-### Get all cattle
-GET http://127.0.0.1:8000/core/getallcattle/
-Content-Type: application/json
+### Test for getting a list of all Cattle
+GET http://127.0.0.1:8000/core/cattle/
 Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
 
-### Get cattle by ID
-GET http://127.0.0.1:8000/core/getcattlebyid/1/
-Content-Type: application/json
+### Test for retrieving a specific Cattle by ID
+GET http://127.0.0.1:8000/core/cattle/12/
 Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
 
-### Update cattle by ID
-PUT http://127.0.0.1:8000/core/updatecattle/1/
+### Test for updating a Cattle
+PUT http://127.0.0.1:8000/core/cattle/1/
 Content-Type: application/json
 Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
 
 {
-  "health_status": "Sick",
-  "breed": "Jersey"
+  "ear_tag_no": "ET1234",
+  "breed": "Jersey",
+  "birth_date": "2022-06-15",
+  "gender": "female",
+  "gestation_status": "pregnant",
+  "health_status": "sick",
+  "last_insemination_date": "2023-01-10",
+  "last_calving_date": "2023-10-05"
 }
 
-### Delete cattle by ID
-DELETE http://127.0.0.1:8000/core/deletecattle/5/
+### Test for deleting a Cattle
+DELETE http://127.0.0.1:8000/core/cattle/4/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Test for creating a new Insemination
+POST http://127.0.0.1:8000/core/insemination/
 Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "cattle": 12,
+  "insemination_date": "2024-02-20",
+  "insemination_type": "artificial",
+  "notes": "Insemination after heat detection."
+}
+
+### Test for getting a list of all Inseminations
+GET http://127.0.0.1:8000/core/insemination/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Test for retrieving a specific Insemination by ID
+GET http://127.0.0.1:8000/core/insemination/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Test for updating an Insemination
+PUT http://127.0.0.1:8000/core/insemination/1/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "cattle": 7,
+  "insemination_date": "2024-02-25",
+  "insemination_type": "natural",
+  "notes": "Changed to natural insemination."
+}
+
+### Test for deleting an Insemination
+DELETE http://127.0.0.1:8000/core/insemination/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Test for creating a new BirthRecord
+POST http://127.0.0.1:8000/core/birth-record/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "cattle": 7,
+  "calving_date": "2024-06-10",
+  "calving_outcome": "successful",
+  "notes": "First calf, no complications."
+}
+
+### Test for getting a list of all BirthRecords
+GET http://127.0.0.1:8000/core/birth-record/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Test for retrieving a specific BirthRecord by ID
+GET http://127.0.0.1:8000/core/birth-record/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+### Test for updating a BirthRecord
+PUT http://127.0.0.1:8000/core/birth-record/1/
+Content-Type: application/json
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+{
+  "cattle": 7,
+  "calving_date": "2024-06-15",
+  "calving_outcome": "complications",
+  "notes": "Calf born with complications, requiring medical attention."
+}
+
+### Test for deleting a BirthRecord
+DELETE http://127.0.0.1:8000/core/birth-records/1/
+Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+
+
+### Test for geting alerts
+GET http://127.0.0.1:8000/core/alerts/
 Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035

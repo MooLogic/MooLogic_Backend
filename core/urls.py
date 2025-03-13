@@ -1,10 +1,13 @@
-from django.urls import path
-from . import views 
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import CattleViewSet, InseminationViewSet, BirthRecordViewSet, AlertViewSet
+
+router = DefaultRouter()
+router.register(r'cattle', CattleViewSet)
+router.register(r'insemination', InseminationViewSet)
+router.register(r'birth-record', BirthRecordViewSet)
+router.register(r'alerts', AlertViewSet)
 
 urlpatterns = [
-    path('addcattle/', views.create_cattle, name='create_cattle'),
-    path('getallcattle/', views.get_all_cattle, name='get_all_cattle'),
-    path('getcattlebyid/<int:cattle_id>/', views.get_cattle_by_id, name='get_cattle_by_id'),
-    path('updatecattle/<int:cattle_id>/', views.update_cattle_by_id, name='update_cattle'),
-    path('deletecattle/<int:cattle_id>/', views.delete_cattle_by_id, name='delete_cattle'),
+    path('', include(router.urls)),
 ]
