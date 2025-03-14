@@ -6,7 +6,7 @@ from rest_framework import status
 from .models import User
 from rest_framework.permissions import AllowAny
 from .models import Farm
-from .serializers import FarmSerializer
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

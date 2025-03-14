@@ -1,7 +1,7 @@
 ### Create a treatment record
 POST http://127.0.0.1:8000/health/trecords/create/
 Content-Type: application/json
-Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+Authorization: Token 086cdd121c76739369ca92d8c1fb1541098ce29d
 
 {
   "veterinarian": 1,

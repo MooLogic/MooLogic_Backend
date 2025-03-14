@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Cattle, Insemination, BirthRecord, Alert
+from .models import Cattle, Insemination, BirthRecord, Alert, Farm
 
 class CattleSerializer(serializers.ModelSerializer):
     class Meta:
