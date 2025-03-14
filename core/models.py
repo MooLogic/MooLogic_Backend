@@ -1,6 +1,8 @@
 from django.db import models
 from datetime import timedelta
 from django.utils import timezone
+from userauth.models import User
+
 
 
 class Cattle(models.Model):
@@ -206,3 +208,18 @@ class Alert(models.Model):
 
     def __str__(self):
         return f"Alert for {self.cattle.ear_tag_no} - {self.message}"
+
+
+class Farm(models.Model):
+    name = models.CharField(max_length=100, help_text="The name of the farm.")
+    location = models.CharField(max_length=100, help_text="The location of the farm.")
+    contact = models.CharField(max_length=100, help_text="The contact number of the farm.")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Farm"
+        verbose_name_plural = "Farms"
+
+    def __str__(self):
+        return f"{self.name} ({self.location})"

@@ -2,8 +2,9 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.utils import timezone
-from .models import Cattle, Insemination, BirthRecord, Alert
-from .serializers import CattleSerializer, InseminationSerializer, BirthRecordSerializer, AlertSerializer
+from .models import Cattle, Insemination, BirthRecord, Alert, Farm
+from .serializers import CattleSerializer, InseminationSerializer, BirthRecordSerializer, AlertSerializer, FarmSerializer
+
 
 class CattleViewSet(viewsets.ModelViewSet):
     queryset = Cattle.objects.all()
@@ -86,3 +87,62 @@ class BirthRecordViewSet(viewsets.ModelViewSet):
 class AlertViewSet(viewsets.ModelViewSet):
     queryset = Alert.objects.all()
     serializer_class = AlertSerializer
+
+############################################################################################################################################################
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_farms(request):
+    farms = Farm.objects.all()
+    serializer = FarmSerializer(farms, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_farm(request):
+    serializer = FarmSerializer(data=request.data)
+    if serializer.is_valid():
+        farm = serializer.save()
+        request.user.farm = farm
+        request.user.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_farm(request, pk):
+    try:
+        farm = Farm.objects.get(pk=pk)
+    except Farm.DoesNotExist:
+        return Response({'error': 'Farm not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = FarmSerializer(farm)
+    return Response(serializer.data)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_farm(request, pk):
+    try:
+        farm = Farm.objects.get(pk=pk)
+        if request.user.farm != farm:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+    except Farm.DoesNotExist:
+        return Response({'error': 'Farm not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = FarmSerializer(farm, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_farm(request, pk):
+    try:
+        farm = Farm.objects.get(pk=pk)
+        if request.user.farm != farm:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+    except Farm.DoesNotExist:
+        return Response({'error': 'Farm not found'}, status=status.HTTP_404_NOT_FOUND)
+    farm.delete()
+    return Response({'message': 'Farm deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+

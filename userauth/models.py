@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from core.models import Farm
+
+
 
 class CustomUserManager(BaseUserManager):
     def _create_user(self, email, password, username, **extra_fields):
@@ -30,8 +33,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255, blank=True, default='')
-    role = models.CharField(max_length=255, blank=True, default='')
-    farm_id = models.CharField(max_length=255, blank=True, default='')
+    
+    ROLE_CHOICES = (
+        ('owner', 'Owner'),
+        ('manager', 'Manager'),
+        ('vaterinarian', 'Veterinarian'),
+        ('worker','Worker'),
+        ('staff', 'Staff')
+
+    )
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='worker', blank=True, null=True)
+
+    farm = models.ForeignKey(Farm, on_delete=models.CASCADE, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

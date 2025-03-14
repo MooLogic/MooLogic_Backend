@@ -5,6 +5,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status
 from .models import User
 from rest_framework.permissions import AllowAny
+from .models import Farm
+from .serializers import FarmSerializer
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -14,7 +16,7 @@ def signup(request):
     """
     email = request.data.get('email')
     username = request.data.get('username')
-    password = request.data.get('password')
+    password = request.data.get('password') 
 
     if not email or not username or not password:
         return Response({'error': 'All fields are required'}, status=status.HTTP_400_BAD_REQUEST)

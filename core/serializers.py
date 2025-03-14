@@ -20,3 +20,8 @@ class AlertSerializer(serializers.ModelSerializer):
     class Meta:
         model = Alert
         fields = '__all__'
+        
+class FarmSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Farm
+        fields = '__all__'
