@@ -8,35 +8,31 @@ from .models import Cattle, Insemination, BirthRecord, Alert, Farm
 from .serializers import CattleSerializer, InseminationSerializer, BirthRecordSerializer, AlertSerializer, FarmSerializer
 
 
-
 class CattleViewSet(viewsets.ModelViewSet):
     queryset = Cattle.objects.all()
     serializer_class = CattleSerializer
 
     @action(detail=True, methods=['get'])
     def generate_alerts(self, request, pk=None):
-        # Get the Cattle object by id
         cattle = self.get_object()
         alerts = cattle.generate_alerts()
-
-        # Create Alert instances for each alert
-        for alert_message in alerts:
+        for alert in alerts:
             Alert.objects.create(
                 cattle=cattle,
-                message=alert_message,
-                due_date=timezone.now().date()
+                message=alert['message'],
+                due_date=timezone.now().date(),
+                priority=alert['priority']
             )
-
-        # Return the alerts
+            if alert['priority'] == 'Emergency':
+                # Trigger SMS and phone call notification
+                pass
         return Response({'alerts': alerts})
 
     @action(detail=True, methods=['post'])
     def update_gestation_status(self, request, pk=None):
-        # Get the Cattle object by id
         cattle = self.get_object()
         cattle.update_gestation_status()
         return Response({'status': 'Gestation status updated successfully.'})
-
 
 class InseminationViewSet(viewsets.ModelViewSet):
     queryset = Insemination.objects.all()
