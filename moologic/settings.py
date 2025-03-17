@@ -2,6 +2,7 @@
 Django settings for moologic project.
 """
 
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     # DRF & Auth
     'rest_framework',
     'rest_framework.authtoken',
+    'rest_framework_simplejwt',
 
     # Social Auth Setup
     'dj_rest_auth',
@@ -117,7 +119,8 @@ REST_FRAMEWORK = {
         
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',  # Optional for browsable API
-        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',    # 🔹 Enable JWT Auth
+        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',  
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # 🔹 Enable JWT Auth
         
 
     ],
@@ -125,7 +128,13 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',  # Default for all views
     ]
 }
-
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
 # 🔹 Enable JWT Authentication
 REST_USE_JWT = True
 
@@ -163,3 +172,13 @@ SIGNUP_FIELDS = {
     "username": {"required": True}, 
     "email": {"required": True}
 }
+
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 8025
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = False
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
