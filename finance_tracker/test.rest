@@ -1,17 +1,17 @@
 # 1. Financial Records (General List)
 GET http://127.0.0.1:8000/api/financial/records/
 Content-Type: application/json
-Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+Authorization: Token  6686896a3acc538103ea1f3178a5bc5ff4c2f721
 ###
 # 2. Financial Records (List with Farm Filter)
 GET http://127.0.0.1:8000/api/financial/records/?farm_id=5
 Content-Type: application/json
-Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
 ###
 # 3. Create an Income Record
 POST http://127.0.0.1:8000/api/financial/records/income/
 Content-Type: application/json
-Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
 
 {
   "farm_id": 5,
@@ -19,11 +19,23 @@ Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
   "amount": "1200.50",
   "description": "Sales from this week's milk production"
 }
+
+#income summary
+###
+POST http://127.0.0.1:8000/api/financial/records/income_summary/?farm_id=5
+Content-Type: application/json
+Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
+# income break
+###
+POST http://127.0.0.1:8000/api/financial/records/income_breakdown/?farm_id=5
+Content-Type: application/json
+Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
+
 ###
 # 4. Create an Expense Record
 POST http://127.0.0.1:8000/api/financial/records/expense/
 Content-Type: application/json
-Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
 
 {
   "farm_id": 5,
@@ -32,25 +44,35 @@ Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
   "description": "Purchased animal feed from the local supplier"
 }
 
+#expense summary
+###
+POST http://127.0.0.1:8000/api/financial/records/expense_summary/?farm_id=5
+Content-Type: application/json
+Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
+# expense break
+###
+POST http://127.0.0.1:8000/api/financial/records/expense_breakdown/?farm_id=5
+Content-Type: application/json
+Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
 ###
 # 5. Get Financial Summary
 GET http://127.0.0.1:8000/api/financial/records/summary/?farm_id=5
 Content-Type: application/json
-Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
 
 
 ###
 # 6. Get Financial Summary (Invalid Farm ID)
 GET http://127.0.0.1:8000/api/financial/records/summary/?farm_id=9999
 Content-Type: application/json
-Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
 
 
 ###
 # 7. Get Financial Summary (Missing Farm ID)
 GET http://127.0.0.1:8000/api/financial/records/summary/
 Content-Type: application/json
-Authorization: Token  29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
 
 ###
 # 8. Generate Profit Snapshot
@@ -79,4 +101,4 @@ Content-Type: application/json
 ###
 GET http://127.0.0.1:8000/api/financial/records/profit_alert/?farm_id=5
 Content-Type: application/json
-Authorization: Token 29c6b87af0fdf5d4dea7ff79d34767f7eb793035
+Authorization: Token  6686896a3acc538103ea1f3178a5bc5ff4c2f721
