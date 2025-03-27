@@ -16,7 +16,7 @@ from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
-
+from .serializers import UserSerializer
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
 
@@ -254,3 +254,42 @@ def refresh_token(request):
 
     except Exception as e:
         return Response({'error': 'Invalid or expired refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['PUT'])  # Change to PUT
+@permission_classes([IsAuthenticated])
+def update_user_role(request):
+    """
+    Update the role of a user.
+    Only admin or authorized users should be able to update another user's role.
+    """
+    user_id = request.data.get('user_id')
+    new_role = request.data.get('role')
+
+    if not user_id or not new_role:
+        return Response({'error': 'User ID and new role are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validate the role value
+    valid_roles = dict(User.ROLE_CHOICES)
+    if new_role not in valid_roles:
+        return Response({'error': 'Invalid role provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Check if the current user has permission to update the role
+    if not request.user.is_superuser:  # Only allow superusers to change roles for others
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    # Update the role of the user
+    user.role = new_role
+    user.save()
+
+    # Optionally, serialize the updated user data to return a response
+    user_data = UserSerializer(user).data
+
+    return Response({
+        'message': 'User role updated successfully',
+        'user': user_data
+    }, status=status.HTTP_200_OK)

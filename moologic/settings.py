@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+
+    'corsheaders',
 ]
 
 # Custom User Model
@@ -63,7 +65,16 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # Add this at the top
+    'django.middleware.common.CommonMiddleware',  # Ensure this is present
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+# # Alternatively, allow specific origins (recommended for production)
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",  # Your Next.js frontend
+# ]
 
 ROOT_URLCONF = 'moologic.urls'
 

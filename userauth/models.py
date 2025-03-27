@@ -40,8 +40,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         ('owner', 'Famr Owner'),
         ('manager', 'Farm Manager'),
-        ('vaterinarian', 'Farm Veterinarian'),
-        ('worker','Dairy Worker'),
+        ('government', 'Government'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='worker', blank=True, null=True)
 

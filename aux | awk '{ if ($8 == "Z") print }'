@@ -1,0 +1,27 @@
+[4m [0m[4m [0m[4mUNIT                                [0m[4m [0m[4mLOAD  [0m[4m [0m[4mACTIVE[0m[4m [0m[4mSUB    [0m[4m [0m[4mDESCRIPTION                                                           [0m
+  avahi-daemon.service                 loaded active running Avahi mDNS/DNS-SD Stack
+  bluetooth.service                    loaded active running Bluetooth service
+  cups.service                         loaded active running CUPS Scheduler
+  dbus-broker.service                  loaded active running D-Bus System Message Bus
+  gpg-agent@etc-pacman.d-gnupg.service loaded active running GnuPG cryptographic agent and passphrase cache for /etc/pacman.d/gnupg
+  ModemManager.service                 loaded active running Modem Manager
+  NetworkManager.service               loaded active running Network Manager
+  polkit.service                       loaded active running Authorization Manager
+  sddm-plymouth.service                loaded active running Simple Desktop Display Manager
+  sshd.service                         loaded active running OpenSSH Daemon
+  systemd-journald.service             loaded active running Journal Service
+  systemd-logind.service               loaded active running User Login Management
+  systemd-resolved.service             loaded active running Network Name Resolution
+  systemd-timesyncd.service            loaded active running Network Time Synchronization
+  systemd-udevd.service                loaded active running Rule-based Manager for Device Events and Files
+  systemd-userdbd.service              loaded active running User Database Manager
+  udisks2.service                      loaded active running Disk Manager
+  upower.service                       loaded active running Daemon for power management
+  user@1000.service                    loaded active running User Manager for UID 1000
+  wpa_supplicant.service               loaded active running WPA supplicant
+
+[0;38;5;245mLegend: LOAD   → Reflects whether the unit definition was properly loaded.[0m
+[0;38;5;245m        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.[0m
+[0;38;5;245m        SUB    → The low-level unit activation state, values depend on unit type.[0m
+
+20 loaded units listed.

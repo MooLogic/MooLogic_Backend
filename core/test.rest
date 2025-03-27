@@ -1,7 +1,7 @@
 # Test for creating a new Cattle
 POST http://127.0.0.1:8000/core/cattle/
 Content-Type: application/json
-Authorization: Token 086cdd121c76739369ca92d8c1fb1541098ce29d
+Authorization: Token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQyNDUxOTkyLCJpYXQiOjE3NDI0NTEwOTIsImp0aSI6ImE1ZWE0YzJhMGE5NzQzZGI5NTlhYmEwZWU1M2MwYjU3IiwidXNlcl9pZCI6MX0.sIyRN8MmGIVi9JeqpUUTa0jYTmnhLfYOYR0VU91nPK4
 
 {
   "ear_tag_no": "ET1235",
@@ -82,7 +82,6 @@ Authorization: Token 086cdd121c76739369ca92d8c1fb1541098ce29d
 POST http://127.0.0.1:8000/core/birth-record/
 Content-Type: application/json
 Authorization: Token 086cdd121c76739369ca92d8c1fb1541098ce29d
-
 {
   "cattle": 7,
   "calving_date": "2024-06-10",
@@ -118,3 +117,15 @@ Authorization: Token 086cdd121c76739369ca92d8c1fb1541098ce29d
 ### Test for geting alerts
 GET http://127.0.0.1:8000/core/alerts/
 Authorization: Token 086cdd121c76739369ca92d8c1fb1541098ce29d
+
+### Test for creating a new Farm
+POST http://127.0.0.1:8000/core/farm/
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQyNDU0NzgyLCJpYXQiOjE3NDI0NTM4ODIsImp0aSI6ImI1YzgxYzMwYjk2OTRhZTc5NzMxZTZiMDgwNjY1ZjNlIiwidXNlcl9pZCI6MX0.rEPitlUbnU3hqzERRvY9tXP6FYZr5CHa-RCADcai2m0
+
+{
+  "name": "hsdj",
+  "location": "Nairobi",
+  "contact": "0712345678"
+  
+}
