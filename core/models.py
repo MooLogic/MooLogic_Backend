@@ -18,7 +18,9 @@ class Cattle(models.Model):
         ('bull', 'Bull'),
     ]
 
+
     GESTATION_STATUS_CHOICES = [
+
         ('not_pregnant', 'Not Pregnant'),
         ('pregnant', 'Pregnant'),
         ('calving', 'Calving'),
