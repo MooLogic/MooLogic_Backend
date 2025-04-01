@@ -25,7 +25,7 @@ class Cattle(models.Model):
 
    
     # Gestation cycle fields
-    GESTATION_STATUS_CHOICES = [
+    GESTATION_STATUS_CHOICES = [ 
         ('not_pregnant', 'Not Pregnant'),
         ('pregnant', 'Pregnant'),
         ('calving', 'Calving'),
