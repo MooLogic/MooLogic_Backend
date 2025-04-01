@@ -23,7 +23,6 @@ def milk_records(request):
 ##function to get milk production by cattle id
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-
 def milk_production_by_cattle(request, cattle_id):
     """
     Get milk production by cattle id.

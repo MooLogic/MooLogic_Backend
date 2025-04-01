@@ -86,6 +86,135 @@ class FinancialRecordViewSet(viewsets.ModelViewSet):
             'profitability': profitability,
             'calculated_on': date.today()
         })
+    
+    @action(detail=False, methods=['post'])
+    def income_summary(self, request):
+        # Check both query params and request body for farm_id
+        farm_id = request.query_params.get('farm_id') or request.data.get('farm_id')
+        if not farm_id:
+            return Response({"error": "farm_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            farm = Farm.objects.get(id=farm_id)
+        except Farm.DoesNotExist:
+            return Response({"error": "Farm not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        queryset = FinancialRecord.objects.filter(farm=farm, recorded_by=self.request.user)
+        # Fix the aggregate syntax (it was using incorrect syntax)
+        total_income = queryset.filter(category__is_income=True).aggregate(Sum('amount'))['amount__sum'] or 0
+        
+        return Response({
+            'Total Income': total_income
+        })
+    @action(detail=False, methods=['post'])
+    def income_breakdown(self, request):
+        farm_id = request.query_params.get('farm_id')
+        if not farm_id:
+            return Response({"error": "farm_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            farm = Farm.objects.get(id=farm_id)
+        except Farm.DoesNotExist:
+            return Response({"error": "Farm not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all income records for the farm by the authenticated user
+        queryset = FinancialRecord.objects.filter(farm=farm, recorded_by=self.request.user, category__is_income=True)
+        
+        if not queryset.exists():
+            return Response({"message": "No income records found for this farm"}, status=status.HTTP_200_OK)
+        
+        # Calculate total income
+        total_income = queryset.aggregate(Sum('amount'))['amount__sum'] or 0
+        if total_income == 0:
+            return Response({"message": "Total income is zero, no breakdown available"}, status=status.HTTP_200_OK)
+        
+        # Group by category and calculate percentages
+        income_Breakdown = {}
+        for record in queryset:
+            category_name = record.category.name
+            amount = record.amount
+            income_Breakdown[category_name] = income_Breakdown.get(category_name, 0) + amount
+        
+        # Calculate percentages
+        breakdown = {
+            category: round((amount / total_income) * 100, 2)
+            for category, amount in income_Breakdown.items()
+        }
+        
+        # Prepare response data
+        response_data = {
+            "title": "Income Sources",
+            "subtitle": "Breakdown of income by source",
+            "breakdown": breakdown,
+            "total_income": total_income,
+            "calculated_on": date.today()
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def expense_breakdown(self, request):
+        farm_id = request.query_params.get('farm_id')
+        if not farm_id:
+            return Response({"error": "farm_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            farm = Farm.objects.get(id=farm_id)
+        except Farm.DoesNotExist:
+            return Response({"error": "Farm not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all income records for the farm by the authenticated user
+        queryset = FinancialRecord.objects.filter(farm=farm, recorded_by=self.request.user, category__is_income=False)
+        
+        if not queryset.exists():
+            return Response({"message": "No expense records found for this farm"}, status=status.HTTP_200_OK)
+        
+        # Calculate total income
+        total_expense = queryset.aggregate(Sum('amount'))['amount__sum'] or 0
+        if total_expense == 0:
+            return Response({"message": "Total expense is zero, no breakdown available"}, status=status.HTTP_200_OK)
+        
+        # Group by category and calculate percentages
+        expense_Breakdown = {}
+        for record in queryset:
+            category_name = record.category.name
+            amount = record.amount
+            expense_Breakdown[category_name] = expense_Breakdown.get(category_name, 0) + amount
+        
+        # Calculate percentages
+        breakdown = {
+            category: round((amount / total_expense) * 100, 2)
+            for category, amount in expense_Breakdown.items()
+        }
+        
+        # Prepare response data
+        response_data = {
+            "title": "Expense Sources",
+            "subtitle": "Breakdown of expense by source",
+            "breakdown": breakdown,
+            "total_expense": total_expense,
+            "calculated_on": date.today()
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+
+    
+    @action(detail=False, methods=['post'])
+    def expense_summary(self, request):
+        farm_id =request.query_params.get('farm_id') or request.data.get('farm_id')
+        if not farm_id:
+            return Response({"error": "farm_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            farm=Farm.objects.get(id=farm_id)
+        except Farm.DoesNotExist:
+            return Response({"error": "Farm not found"}, status=status.HTTP_404_NOT_FOUND)
+        queryset=FinancialRecord.objects.filter(farm=farm, recorded_by=self.request.user)
+        total_expense=queryset.filter(category__is_income=False).aggregate(Sum('amount'))['amount__sum'] or 0
+        return Response({
+            'Total Expense': total_expense
+        })
 
     # New endpoint for profit alert
     @action(detail=False, methods=['get'])

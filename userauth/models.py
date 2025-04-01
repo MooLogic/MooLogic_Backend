@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from core.models import Farm
+
+
 
 class CustomUserManager(BaseUserManager):
     def _create_user(self, email, password, username, **extra_fields):
@@ -29,9 +32,26 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=255, unique=True)
-    name = models.CharField(max_length=255, blank=True, default='')
-    role = models.CharField(max_length=255, blank=True, default='')
-    farm_id = models.CharField(max_length=255, blank=True, default='')
+    first_name = models.CharField(max_length=255, blank=True, default='')
+    last_name = models.CharField(max_length=255, blank=True, default='')
+    phone_number = models.CharField(max_length=15, blank=True, default='')
+    bio = models.TextField(blank=True, default='')
+    
+    ROLE_CHOICES = (
+        ('owner', 'Famr Owner'),
+        ('manager', 'Farm Manager'),
+        ('vaterinarian', 'Farm Veterinarian'),
+        ('worker','Dairy Worker'),
+    )
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='worker', blank=True, null=True)
+
+    farm = models.ForeignKey(Farm, on_delete=models.CASCADE, null=True, blank=True)
+
+    get_email_notification = models.BooleanField(default=True)
+    get_push_notification = models.BooleanField(default=False)
+    get_sms_notification = models.BooleanField(default=False)
+
+    oversite_access = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -39,6 +59,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(blank=True, null=True)
+    
+    LANGUAGE_CHOICES = (
+        ('en', 'English'),
+        ('am', 'Amharic'),
+        ('or', 'Oromiffa'),
+        
+    )
+    language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default='en')
 
     objects = CustomUserManager()
 

@@ -1,16 +1,74 @@
-POST http://127.0.0.1:8000/auth/login/
-Content-Type: application/json
-
-{"email": "dskdjksj@sdskdjs.com", "password": "qwer1234"}
- 
-###
+### Signup a new user
 POST http://127.0.0.1:8000/auth/signup/
 Content-Type: application/json
 
-{"username": "test2", "password": "qwer1234", "email": "dskdjksj@sdskdjs.com"}
+{
+  "username": "testuser",
+  "password": "qwer1234",
+  "email": "testuser@example.com"
+}
 
-###
-POST http://127.0.0.1:8080/test
+### Login with the registered user
+POST http://127.0.0.1:8000/auth/login/
 Content-Type: application/json
 
+{
+  "email": "testuser@example.com",
+  "password": "qwer1234"
+}
+
+### Request password reset
+POST http://127.0.0.1:8000/auth/password-reset/
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com"
+}
+
+### Reset password using token and UID
+POST http://127.0.0.1:8000/auth/password-reset-confirm/
+Content-Type: application/json
+
+{
+  "uidb64": "some-uidb64-token",
+  "token": "reset-token",
+  "new_password": "newpassword123"
+}
+
+### Edit user profile (Requires Authorization Token)
+PUT http://127.0.0.1:8000/auth/edit-profile/
+Content-Type: application/json
+Authorization: Token YOUR_AUTH_TOKEN_HERE
+
+{
+  "name": "Updated User",
+  "username": "updateduser",
+  "email": "updateduser@example.com",
+  "role": "user",
+  "language": "English"
+}
+
+### Change password (Requires Authorization Token)
+PUT http://127.0.0.1:8000/auth/change-password/
+Content-Type: application/json
+Authorization: Token YOUR_AUTH_TOKEN_HERE
+
+{
+  "old_password": "qwer1234",
+  "new_password": "newpassword123"
+}
+
+### Logout (Requires Authorization Token)
+POST http://127.0.0.1:8000/auth/logout/
+Content-Type: application/json
+Authorization: Token YOUR_AUTH_TOKEN_HERE
+
 {}
+
+### Google Login
+POST http://127.0.0.1:8000/auth/google-login/
+Content-Type: application/json
+
+{
+  "access_token": "GOOGLE_ACCESS_TOKEN"
+}
