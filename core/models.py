@@ -3,7 +3,6 @@ from datetime import timedelta
 from django.utils import timezone
 
 
-
 class Cattle(models.Model):
     GENDER_CHOICES = [
         ('male', 'Male'),

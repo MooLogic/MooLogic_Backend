@@ -1,104 +1,96 @@
-# 1. Financial Records (General List)
-GET http://127.0.0.1:8000/api/financial/records/
+# 1. Create Income Record
+POST http://127.0.0.1:8000/financial/income/create/
 Content-Type: application/json
-Authorization: Token  6686896a3acc538103ea1f3178a5bc5ff4c2f721
-###
-# 2. Financial Records (List with Farm Filter)
-GET http://127.0.0.1:8000/api/financial/records/?farm_id=5
-Content-Type: application/json
-Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
-###
-# 3. Create an Income Record
-POST http://127.0.0.1:8000/api/financial/records/income/
-Content-Type: application/json
-Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
 
 {
-  "farm_id": 5,
+  "farm_id": 3,
   "category_name": "Milk Sales",
-  "amount": "1200.50",
+  "amount": 1200.50,
   "description": "Sales from this week's milk production"
 }
 
-#income summary
-###
-POST http://127.0.0.1:8000/api/financial/records/income_summary/?farm_id=5
-Content-Type: application/json
-Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
-# income break
-###
-POST http://127.0.0.1:8000/api/financial/records/income_breakdown/?farm_id=5
-Content-Type: application/json
-Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
 
 ###
-# 4. Create an Expense Record
-POST http://127.0.0.1:8000/api/financial/records/expense/
+#2 update income record
+PUT  http://127.0.0.1:8000/financial/income/update/5/
 Content-Type: application/json
-Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
 
 {
-  "farm_id": 5,
-  "category_name": "Animal Feed",
-  "amount": "1650.00",
-  "description": "Purchased animal feed from the local supplier"
+  "farm_id": 3,
+  "category_name": "cattle  Sales",
+  "amount": 1400,
+  "description": "cattle Sales from this week's "
 }
 
-#expense summary
 ###
-POST http://127.0.0.1:8000/api/financial/records/expense_summary/?farm_id=5
-Content-Type: application/json
-Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
-# expense break
+#3 delete income record
+DELETE  http://127.0.0.1:8000/financial/income/delete/3/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
 ###
-POST http://127.0.0.1:8000/api/financial/records/expense_breakdown/?farm_id=5
-Content-Type: application/json
-Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
+#4 total income
+GET http://127.0.0.1:8000/financial/income/total/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
 ###
-# 5. Get Financial Summary
-GET http://127.0.0.1:8000/api/financial/records/summary/?farm_id=5
-Content-Type: application/json
-Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
-
+#5 income breakdown
+GET http://127.0.0.1:8000/financial/income/breakdown/3/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
 
 ###
-# 6. Get Financial Summary (Invalid Farm ID)
-GET http://127.0.0.1:8000/api/financial/records/summary/?farm_id=9999
-Content-Type: application/json
-Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
-
+#6 income list
+GET http://127.0.0.1:8000/financial/income/list//
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
 
 ###
-# 7. Get Financial Summary (Missing Farm ID)
-GET http://127.0.0.1:8000/api/financial/records/summary/
+#7 create expense record
+POST http://127.0.0.1:8000/financial/expense/create/
 Content-Type: application/json
-Authorization: Token   6686896a3acc538103ea1f3178a5bc5ff4c2f721
-
-###
-# 8. Generate Profit Snapshot
-POST http://127.0.0.1:8000/api/financial/profit-snapshots/generate_snapshot/
-Content-Type: application/json
-#Authorization: Token  # Token is not used for authorization here
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
 
 {
-  "farm_id": 5
+  "farm_id": 3,
+  "category_name": "Feed buy",
+  "amount": 10000.50,
+  "description": "Feed buy for the cattle"
 }
 
-
 ###
-# 9. Generate Profit Snapshot (Invalid Farm ID)
-POST http://127.0.0.1:8000/api/financial/profit-snapshots/generate_snapshot/
+#8 update expense record
+
+PUT  http://127.0.0.1:8000/financial/expense/update/1/
 Content-Type: application/json
-#Authorization: Token   # Token is not used for authorization here
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
 
 {
-  "farm_id": 9999
+  "farm_id": 3,
+  "category_name": "cattle  Sales",
+  "amount": 1000,
+  "description": "cattle Sales from this week's "
 }
-
-# Expected Result: 404 Not Found, error message: "Farm not found"
-
-#10 Alert when the profit goes negative 
 ###
-GET http://127.0.0.1:8000/api/financial/records/profit_alert/?farm_id=5
-Content-Type: application/json
-Authorization: Token  6686896a3acc538103ea1f3178a5bc5ff4c2f721
+#9 delete  expense record
+DELETE  http://127.0.0.1:8000/financial/expense/delete/2/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
+###
+#10 total expense
+GET http://127.0.0.1:8000/financial/expense/total/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
+###
+#11 expense breakdown
+GET http://127.0.0.1:8000/financial/expense/breakdown/3/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
+###
+#12 expense list
+GET http://127.0.0.1:8000/financial/expense/list//
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
+###
+#13 profit snapshot 
+
+POST http://127.0.0.1:8000/financial/profit/snapshot/?farm_id=3
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y
+###
+#14 generate alert
+
+POST http://127.0.0.1:8000/financial/profit/snapshot/alerts/?farm_id=3
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQzNTgxNjcwLCJpYXQiOjE3NDM1ODA3NzAsImp0aSI6ImQ5YmRmODdmNzBkNTQ2NTY5MmRkYTI2YzQ0NjI1OGJkIiwidXNlcl9pZCI6NH0.GeiqFX2zqzE1-tiWboRjWP48w3w1XRQXGJlUXRXxW0Y

@@ -1,33 +1,42 @@
 from django.db import models
+from django.contrib.auth import get_user_model
 from core.models import Farm
-from userauth.models import User
 
-class FinancialCategory(models.Model):
-    name = models.CharField(max_length=50)  # e.g., "Milk Sales", "Feed"
-    is_income = models.BooleanField(default=False)
+User = get_user_model()
 
-    def __str__(self):
-        return self.name
 
-class FinancialRecord(models.Model):
-    farm = models.ForeignKey(Farm, on_delete=models.CASCADE)
-    category = models.ForeignKey(FinancialCategory, on_delete=models.CASCADE)
+class IncomeRecord(models.Model):
+   # farm = models.ForeignKey(Farm, on_delete=models.CASCADE)
+    category_name = models.CharField(max_length=50)  # e.g., "Milk Sales"
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True, null=True)
-    date = models.DateField(auto_now_add=True)  # Auto-set to current date
-    recorded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='financial_records')
+    date = models.DateField(auto_now_add=True)
+    recorded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='income_records')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.category.name} - {self.amount} ETB ({self.date})"
+        return f"{self.category_name} - {self.amount} ETB ({self.date})"
+
+class ExpenseRecord(models.Model):
+    #farm = models.ForeignKey(Farm, on_delete=models.CASCADE)
+    category_name = models.CharField(max_length=50)  # e.g., "Animal Feed"
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.TextField(blank=True, null=True)
+    date = models.DateField(auto_now_add=True)
+    recorded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='expense_records')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.category_name} - {self.amount} ETB ({self.date})"
 
 class ProfitSnapshot(models.Model):
-    farm = models.ForeignKey(Farm, on_delete=models.CASCADE)
+    #farm_id = models.ForeignKey(Farm, on_delete=models.CASCADE)
     total_income = models.DecimalField(max_digits=12, decimal_places=2)
     total_expense = models.DecimalField(max_digits=12, decimal_places=2)
     net_profit = models.DecimalField(max_digits=12, decimal_places=2)
-    date = models.DateField(auto_now_add=True)  # Auto-set to current date
+    date = models.DateField(auto_now_add=True)
 
     def calculate_profit(self):
         self.net_profit = self.total_income - self.total_expense
