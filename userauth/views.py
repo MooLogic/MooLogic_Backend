@@ -262,15 +262,19 @@ def update_user_role(request):
     Update the role of a user.
     Only admin or authorized users should be able to update another user's role.
     """
+    print("functon called")
     user_id = request.data.get('user_id')
     new_role = request.data.get('role')
 
     if not user_id or not new_role:
+        if not user_id:
+            print("no user")
         return Response({'error': 'User ID and new role are required'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Validate the role value
     valid_roles = dict(User.ROLE_CHOICES)
     if new_role not in valid_roles:
+        print("invalid role")
         return Response({'error': 'Invalid role provided'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
@@ -278,18 +282,23 @@ def update_user_role(request):
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Check if the current user has permission to update the role
-    if not request.user.is_superuser:  # Only allow superusers to change roles for others
-        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+    
 
     # Update the role of the user
     user.role = new_role
     user.save()
-
+    print(user)
     # Optionally, serialize the updated user data to return a response
-    user_data = UserSerializer(user).data
-
+   
+    # user_ = UserSerializer(user).data
     return Response({
-        'message': 'User role updated successfully',
-        'user': user_data
+        'message': 'Role updated successfully',
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'username': user.username,
+            'name': user.username,
+            'role': user.role,
+            'language': user.language,
+        }
     }, status=status.HTTP_200_OK)
