@@ -95,7 +95,7 @@ def get_farms(request):
     farms = Farm.objects.all()
     serializer = FarmSerializer(farms, many=True)
     return Response(serializer.data)
-
+ 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_farm(request):
@@ -104,6 +104,7 @@ def create_farm(request):
         farm = serializer.save()
         request.user.farm = farm
         request.user.save()
+        
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

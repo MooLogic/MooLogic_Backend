@@ -31,20 +31,28 @@ class CustomUserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
-    username = models.CharField(max_length=255, unique=True)
-    first_name = models.CharField(max_length=255, blank=True, default='')
-    last_name = models.CharField(max_length=255, blank=True, default='')
+    username = models.CharField(max_length=150, unique=True)
+    full_name = models.CharField(max_length=255, blank=True, default='')
+
     phone_number = models.CharField(max_length=15, blank=True, default='')
-    bio = models.TextField(blank=True, default='')
+    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     
     ROLE_CHOICES = (
         ('owner', 'Famr Owner'),
         ('manager', 'Farm Manager'),
-        ('vaterinarian', 'Farm Veterinarian'),
         ('worker','Dairy Worker'),
     )
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='worker', blank=True, null=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, blank=True, null=True)
 
+    WORKER_ROLE_CHOICES = (
+        ('vaterinary', 'Veterinary'),
+        ('careGiver', 'Care Giver'),
+        ('manager', 'Farm Manager'),
+        ('finance', 'Finance'),
+        ('generalpurpose', 'General Purpose'),
+    )
+
+    worker_role = models.CharField(max_length=20, choices=WORKER_ROLE_CHOICES, default='generalpurpose', blank=True, null=True)
     farm = models.ForeignKey(Farm, on_delete=models.CASCADE, null=True, blank=True)
 
     get_email_notification = models.BooleanField(default=True)
@@ -54,8 +62,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     oversite_access = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    is_superuser = models.BooleanField(default=False)
+    
 
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(blank=True, null=True)

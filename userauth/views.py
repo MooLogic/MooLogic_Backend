@@ -81,6 +81,11 @@ def login(request):
             'id': user.id,
             'email': user.email,
             'username': user.username,
+            'farm' : user.farm.name if user.farm else None,
+            'role': user.role,
+            'language': user.language,
+            'workRole': user.worker_role,
+
         },
         'access_token': str(refresh.access_token),
         'refresh_token': str(refresh),
@@ -156,11 +161,17 @@ def edit_profile(request):
     user = request.user  # Get the authenticated user
 
     # Get the updated fields from request data
-    name = request.data.get('name', user.name)  # Default to existing value if not provided
+    full_name = request.data.get('name', user.name)  # Default to existing value if not provided
     username = request.data.get('username', user.username)
     email = request.data.get('email', user.email)
     role = request.data.get('role', user.role)
     language = request.data.get('language', user.language)
+    phone_number = request.data.get('phone_number', user.phone_number)
+    profile_picture = request.data.get('profile_picture', user.profile_picture)
+    worker_role = request.data.get('worker_role', user.worker_role)
+    get_email_notification = request.data.get('get_email_notification', user.get_email_notification)
+    get_push_notification = request.data.get('get_push_notification', user.get_push_notification)
+    get_sms_notification = request.data.get('get_sms_notification', user.get_sms_notification)
 
     # Check if the new email or username is already taken
     if User.objects.exclude(id=user.id).filter(email=email).exists():
@@ -170,11 +181,18 @@ def edit_profile(request):
         return Response({'error': 'Username already in use'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Update the user's profile
-    user.name = name
+    user.name = full_name
     user.username = username
     user.email = email
     user.role = role
     user.language = language
+    user.phone_number = phone_number
+    user.profile_picture = profile_picture
+    user.worker_role = worker_role
+    user.get_email_notification = get_email_notification
+    user.get_push_notification = get_push_notification
+    user.get_sms_notification = get_sms_notification
+    
     user.save()
 
     return Response({
@@ -186,6 +204,13 @@ def edit_profile(request):
             'name': user.name,
             'role': user.role,
             'language': user.language,
+            'phone_number': user.phone_number,
+            'profile_picture': user.profile_picture.url if user.profile_picture else None,
+            'worker_role': user.worker_role,
+            'get_email_notification': user.get_email_notification,
+            'get_push_notification': user.get_push_notification,
+            'get_sms_notification': user.get_sms_notification,
+
         }
     }, status=status.HTTP_200_OK)
 
@@ -235,6 +260,8 @@ def logout(request):
     except Exception as e:
         return Response({'error': 'Invalid or expired refresh token'}, status=status.HTTP_400_BAD_REQUEST)
 
+from rest_framework_simplejwt.exceptions import TokenError
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def refresh_token(request):
@@ -252,5 +279,42 @@ def refresh_token(request):
 
         return Response({'access_token': new_access_token}, status=status.HTTP_200_OK)
 
+    except TokenError as e:
+        return Response({'error': f'Invalid or expired refresh token: {str(e)}'}, status=status.HTTP_401_UNAUTHORIZED)
+
     except Exception as e:
-        return Response({'error': 'Invalid or expired refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response({'error': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])  
+@permission_classes([IsAuthenticated])
+def update_user_role(request):
+    """
+    Update user role.
+    """
+    user_id = request.data.get('user_id')
+    new_role = request.data.get('role')
+
+    if not new_role:
+        return Response({'error': 'Role is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if new_role == 'worker' or new_role == 'government':
+        
+        try:
+            user = User.objects.get(id=user_id)
+            user.role = new_role
+            user.is_active = False  
+            user.save()
+            return Response({'message': 'User role updated successfully'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    else:
+        try:
+            user = User.objects.get(id=user_id)
+            user.role = new_role 
+            user.save()
+            return Response({'message': 'User role updated successfully'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+

@@ -1,7 +1,3 @@
-"""
-Django settings for moologic project.
-"""
-
 from datetime import timedelta
 from pathlib import Path
 
@@ -28,14 +24,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+    'corsheaders',
+
     # Custom Apps
     'userauth',
     'finance_tracker',
     'core',
     'milk_tracker',
     'health_manager',
-    
+
     # DRF & Auth
     'rest_framework',
     'rest_framework.authtoken',
@@ -63,6 +60,14 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
 ]
 
 ROOT_URLCONF = 'moologic.urls'
@@ -116,25 +121,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # 🔹 REST Framework Authentication Setup
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',  # Optional for browsable API
-        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',  
+        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',  # 🔹 Enable JWT Auth
-        
-
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',  # Default for all views
     ]
 }
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
 # 🔹 Enable JWT Authentication
 REST_USE_JWT = True
 
@@ -165,16 +169,16 @@ ACCOUNT_LOGOUT_ON_GET = True
 # 🔹 Required for Django-Allauth
 SITE_ID = 1
 ACCOUNT_EMAIL_VERIFICATION = "none"
-ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
-
-SIGNUP_FIELDS = {
-    "username": {"required": True}, 
-    "email": {"required": True}
+ACCOUNT_LOGIN_METHODS = {"email"}  # Use a set
+ACCOUNT_SIGNUP_FIELDS = {
+    
+    "email": {"required": True},
+    "username": {"required": True},
+    "password1": {"required": True},
+    "password2": {"required": True},
 }
 
-
-
+# Email Settings (For production, update SMTP settings accordingly)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 8025
