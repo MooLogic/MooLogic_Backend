@@ -318,3 +318,23 @@ def update_user_role(request):
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
+#function to add aworker to farm
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_worker_farm(request):
+    """
+    Update worker's farm.
+    """
+    user_id = request.data.get('user_id')
+    farm_id = request.data.get('farm_code')
+
+    if not farm_id:
+        return Response({'error': 'Farm ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        user = User.objects.get(id=user_id)
+        user.farm = farm_id
+        user.save()
+        return Response({'message': 'Worker farm updated successfully'}, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)

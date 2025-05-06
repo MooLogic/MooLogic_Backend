@@ -46,7 +46,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     WORKER_ROLE_CHOICES = (
         ('vaterinary', 'Veterinary'),
-        ('careGiver', 'Care Giver'),
+        ('milktracker', 'Milk production tracker'),
         ('manager', 'Farm Manager'),
         ('finance', 'Finance'),
         ('generalpurpose', 'General Purpose'),
@@ -62,7 +62,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     oversite_access = models.BooleanField(default=False)
 
     is_active = models.BooleanField(default=True)
-    
+    is_staff = models.BooleanField(default=False)
 
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(blank=True, null=True)

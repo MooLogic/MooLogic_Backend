@@ -169,14 +169,14 @@ ACCOUNT_LOGOUT_ON_GET = True
 # 🔹 Required for Django-Allauth
 SITE_ID = 1
 ACCOUNT_EMAIL_VERIFICATION = "none"
-ACCOUNT_LOGIN_METHODS = {"email"}  # Use a set
-ACCOUNT_SIGNUP_FIELDS = {
+# ACCOUNT_LOGIN_METHODS = {"email"}  # Use a set
+# ACCOUNT_SIGNUP_FIELDS = {
     
-    "email": {"required": True},
-    "username": {"required": True},
-    "password1": {"required": True},
-    "password2": {"required": True},
-}
+#     "email": {"required": True},
+#     "username": {"required": True},
+#     "password1": {"required": True},
+#     "password2": {"required": True},
+# }
 
 # Email Settings (For production, update SMTP settings accordingly)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
