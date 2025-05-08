@@ -101,6 +101,8 @@ def get_farms(request):
 def create_farm(request):
     serializer = FarmSerializer(data=request.data)
     if serializer.is_valid():
+        farm_code = "FARM" + str(Farm.objects.count() + 1)
+        serializer.validated_data['farm_code'] = farm_code
         farm = serializer.save()
         request.user.farm = farm
         request.user.save()

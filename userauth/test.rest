@@ -3,9 +3,9 @@ POST http://127.0.0.1:8000/auth/signup/
 Content-Type: application/json
 
 {
-  "username": "testman",
+  "username": "tesxxtman",
   "password": "qwer1234",
-  "email": "testman@example.com"
+  "email": "tesxxtman@example.com"
 }
 
 ### Login with the registered user

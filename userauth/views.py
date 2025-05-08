@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authtoken.models import Token
 from rest_framework import status
+
+from core.models import Farm
 from .models import User
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -58,7 +60,7 @@ def signup(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def login(request):
+def login(request):sudo pacman -Syu
     """
     User login view with JWT authentication.
     """
@@ -327,13 +329,16 @@ def update_worker_farm(request):
     """
     user_id = request.data.get('user_id')
     farm_id = request.data.get('farm_code')
-
+    workerRole = request.data.get('workerRole')
+    print(user_id,farm_id,workerRole)
     if not farm_id:
         return Response({'error': 'Farm ID is required'}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
         user = User.objects.get(id=user_id)
-        user.farm = farm_id
+        farm = Farm.objects.get(farm_code=farm_id)
+        user.farm = farm
+        user.worker_role = workerRole
         user.save()
         return Response({'message': 'Worker farm updated successfully'}, status=status.HTTP_200_OK)
     except User.DoesNotExist:

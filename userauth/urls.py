@@ -12,4 +12,5 @@ urlpatterns = [
     path('logout/', views.logout, name='logout'),   
     path('google-login/', views.GoogleLogin.as_view(), name='google-login'),
     path('update-role/', views.update_user_role, name='update-role'),
+    path('join-farm/', views.update_worker_farm, name='join-farm'),
 ]

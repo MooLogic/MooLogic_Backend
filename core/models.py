@@ -190,11 +190,13 @@ class Alert(models.Model):
             # Implement SMS and phone call notification logic here
             pass
 class Farm(models.Model):
-    name = models.CharField(max_length=100, help_text="The name of the farm.")
+    name = models.CharField(max_length=100, help_text="The name of the farm.", unique=True)
+    farm_code = models.CharField(max_length=100, unique=True, help_text="The unique code for the farm.", blank=True, null=True)
     location = models.CharField(max_length=100, help_text="The location of the farm.")
     contact = models.CharField(max_length=100, help_text="The contact number of the farm.")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
 
     class Meta:
         verbose_name = "Farm"
