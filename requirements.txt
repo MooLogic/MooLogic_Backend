@@ -10,3 +10,5 @@ django-environ  # For managing environment variables
 celery  # If you're using asynchronous tasks
 redis  # Required if using Celery with Redis
 channels  # For WebSocket support
+dj-rest-auth
+dj-rest-auth djangorestframework django-allauth
