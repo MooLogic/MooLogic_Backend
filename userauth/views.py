@@ -58,9 +58,10 @@ def signup(request):
 
 
 
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def login(request):sudo pacman -Syu
+def login(request):
     """
     User login view with JWT authentication.
     """
@@ -70,29 +71,27 @@ def login(request):sudo pacman -Syu
     if not email or not password:
         return Response({'error': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    user = authenticate(email=email, password=password)
+    user = authenticate(request, email=email, password=password)  # Pass request to authenticate
 
     if user is None:
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
     refresh = RefreshToken.for_user(user)
-    
+
     return Response({
         'message': 'Login successful',
         'user': {
             'id': user.id,
             'email': user.email,
             'username': user.username,
-            'farm' : user.farm.name if user.farm else None,
+            'farm': user.farm.name if user.farm else None,
             'role': user.role,
             'language': user.language,
             'workRole': user.worker_role,
-
         },
         'access_token': str(refresh.access_token),
         'refresh_token': str(refresh),
     }, status=status.HTTP_200_OK)
-
 
 
 @api_view(['POST'])
@@ -325,21 +324,28 @@ def update_user_role(request):
 @permission_classes([IsAuthenticated])
 def update_worker_farm(request):
     """
-    Update worker's farm.
+    Update a worker's farm and role.
     """
     user_id = request.data.get('user_id')
     farm_id = request.data.get('farm_code')
-    workerRole = request.data.get('workerRole')
-    print(user_id,farm_id,workerRole)
-    if not farm_id:
-        return Response({'error': 'Farm ID is required'}, status=status.HTTP_400_BAD_REQUEST)
-    
+    worker_role = request.data.get('workerRole')
+
+    if not user_id or not farm_id or not worker_role:
+        return Response({'error': 'user_id, farm_code, and workerRole are required'}, status=status.HTTP_400_BAD_REQUEST)
+
     try:
         user = User.objects.get(id=user_id)
-        farm = Farm.objects.get(farm_code=farm_id)
+        farm = Farm.objects.get(id=farm_id)  # Assuming `id` is used; use `code=farm_id` if farm_code is a custom field
+
         user.farm = farm
-        user.worker_role = workerRole
+        user.worker_role = worker_role
+        user.is_active = True  # Activate the worker once assigned
         user.save()
-        return Response({'message': 'Worker farm updated successfully'}, status=status.HTTP_200_OK)
+
+        return Response({'message': 'Worker assigned to farm successfully'}, status=status.HTTP_200_OK)
+
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    except Farm.DoesNotExist:
+        return Response({'error': 'Farm not found'}, status=status.HTTP_404_NOT_FOUND)
