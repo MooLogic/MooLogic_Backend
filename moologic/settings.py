@@ -1,20 +1,14 @@
 from datetime import timedelta
 from pathlib import Path
+import os  # Import the os module
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-szqjme@62se#a3%fq2yw8+f6tmrp5)nk^(j!8=h&zqz7a5=k8^'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-szqjme@62se#a3%fq2yw8+f6tmrp5)nk^(j!8=h&zqz7a5=k8^')
+DEBUG = os.environ.get('DJANGO_DEBUG', True)  # Use environment variable for DEBUG
 
-DEBUG = True
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1').split(',')
 
-ALLOWED_HOSTS = [
-    'moologic-backend-3.onrender.com',
-    'moologic-backend-4.onrender.com',
-    'moologic-backend-5.onrender.com',
-    'moologic-backend-6.onrender.com',
-    'moologic-backend-7.onrender.com',
-    '127.0.0.1'
-]
 
 # Application definition
 INSTALLED_APPS = [
@@ -35,16 +29,16 @@ INSTALLED_APPS = [
 
     # DRF & Auth
     'rest_framework',
-    'rest_framework.authtoken',
     'rest_framework_simplejwt',
 
-    # Social Auth Setup
-    'dj_rest_auth',
-    'dj_rest_auth.registration',
+    # Social Auth
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+    'rest_framework.authtoken',
 ]
 
 # Custom User Model
@@ -59,15 +53,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-]
-
-CORS_ALLOW_ALL_ORIGINS = True
-
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'moologic.urls'
@@ -80,7 +67,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
-                'django.template.context_processors.request',  # Required for allauth
+                'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -114,40 +101,48 @@ USE_TZ = True
 
 # Static Files
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # For production
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# 🔹 REST Framework Authentication Setup
+# REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        # 'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',  # Optional for browsable API
-        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
-        'rest_framework_simplejwt.authentication.JWTAuthentication',  # 🔹 Enable JWT Auth
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',  # Optional, for browsable API
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # Default for all views
-    ]
+        'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10  # Default pagination size
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=500),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',  # Specify the user ID field
+    'USER_ID_CLAIM': 'user_id', # Claim name in the token
 }
 
-# 🔹 Enable JWT Authentication
-REST_USE_JWT = True
+# CORS Configuration (SECURITY WARNING: DO NOT USE ALLOW_ALL_ORIGINS IN PRODUCTION!)
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Allow all origins in development, restrict in production
+CORS_ALLOWED_ORIGINS = os.environ.get('DJANGO_CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+CORS_ALLOW_CREDENTIALS = True  # If you need to allow credentials (e.g., cookies)
 
-# 🔹 Google OAuth2 Configuration
+CSRF_TRUSTED_ORIGINS = os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhost:3000').split(',')
+
+
+# Google OAuth2 Configuration (Use environment variables for secrets!)
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': 'YOUR_GOOGLE_CLIENT_ID',
-            'secret': 'YOUR_GOOGLE_CLIENT_SECRET',
+            'client_id': os.environ.get('GOOGLE_CLIENT_ID'),
+            'secret': os.environ.get('GOOGLE_CLIENT_SECRET'),
             'key': ''
         },
         'SCOPE': ['email', 'profile'],
@@ -155,34 +150,31 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-# 🔹 Authentication Backends
+# Authentication Backends
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 )
+# Allauth Settings
+ACCOUNT_EMAIL_VERIFICATION = "none"  # Or "mandatory" in production
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = "email" # "username_email"
+ACCOUNT_EMAIL_REQUIRED = True
+LOGIN_ON_EMAIL_CONFIRMATION = True
 
-# 🔹 Redirect URLs After Login
-LOGIN_REDIRECT_URL = "/dashboard"
-LOGOUT_REDIRECT_URL = "/"
-ACCOUNT_LOGOUT_ON_GET = True
+# Updated allauth settings to address deprecation warnings
+ACCOUNT_LOGIN_METHODS = ['email']  # Use a list
+ACCOUNT_SIGNUP_FIELDS = ['email', 'username'] # Specify fields for signup
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = True
 
-# 🔹 Required for Django-Allauth
-SITE_ID = 1
-ACCOUNT_EMAIL_VERIFICATION = "none"
-# ACCOUNT_LOGIN_METHODS = {"email"}  # Use a set
-# ACCOUNT_SIGNUP_FIELDS = {
-    
-#     "email": {"required": True},
-#     "username": {"required": True},
-#     "password1": {"required": True},
-#     "password2": {"required": True},
-# }
-
-# Email Settings (For production, update SMTP settings accordingly)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'localhost'
-EMAIL_PORT = 8025
-EMAIL_USE_TLS = False
-EMAIL_USE_SSL = False
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = ''
+# Email Settings (Configure for production!)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Change for production
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 8025))
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', False)
+EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', False)
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@example.com')
+SERVER_EMAIL = os.environ.get('SERVER_EMAIL', 'no-reply@example.com')

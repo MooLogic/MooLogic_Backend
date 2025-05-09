@@ -22,8 +22,6 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
 
-
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def signup(request):
@@ -42,9 +40,7 @@ def signup(request):
 
     user = User.objects.create_user(email=email, username=username, password=password)
 
-    # Generate JWT tokens
     refresh = RefreshToken.for_user(user)
-
     return Response({
         'message': 'User registered successfully',
         'user': {
@@ -57,13 +53,11 @@ def signup(request):
     }, status=status.HTTP_201_CREATED)
 
 
-
-
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
     """
-    User login view with JWT authentication.
+    User login view with JWT authentication using email.
     """
     email = request.data.get('email')
     password = request.data.get('password')
@@ -71,23 +65,23 @@ def login(request):
     if not email or not password:
         return Response({'error': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    user = authenticate(request, email=email, password=password)  # Pass request to authenticate
+    user = authenticate(request, username=email, password=password)  # Authenticate with email
 
     if user is None:
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
     refresh = RefreshToken.for_user(user)
-
     return Response({
         'message': 'Login successful',
         'user': {
             'id': user.id,
             'email': user.email,
             'username': user.username,
+            'full_name': user.full_name,
             'farm': user.farm.name if user.farm else None,
             'role': user.role,
             'language': user.language,
-            'workRole': user.worker_role,
+            'worker_role': user.worker_role,
         },
         'access_token': str(refresh.access_token),
         'refresh_token': str(refresh),
@@ -321,7 +315,7 @@ def update_user_role(request):
 
 #function to add aworker to farm
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def update_worker_farm(request):
     """
     Update a worker's farm and role.
@@ -329,17 +323,22 @@ def update_worker_farm(request):
     user_id = request.data.get('user_id')
     farm_id = request.data.get('farm_code')
     worker_role = request.data.get('workerRole')
-
+    print("user_di : " + str(user_id))
+    print("farm_id : " + str(farm_id))
+    print("worker_role : " + str(worker_role))
     if not user_id or not farm_id or not worker_role:
         return Response({'error': 'user_id, farm_code, and workerRole are required'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         user = User.objects.get(id=user_id)
-        farm = Farm.objects.get(id=farm_id)  # Assuming `id` is used; use `code=farm_id` if farm_code is a custom field
+        farm = Farm.objects.get(farm_code=farm_id)  # Assuming `id` is used; use `code=farm_id` if farm_code is a custom field
 
         user.farm = farm
         user.worker_role = worker_role
         user.is_active = True  # Activate the worker once assigned
+        print(user)
+        print(farm)
+
         user.save()
 
         return Response({'message': 'Worker assigned to farm successfully'}, status=status.HTTP_200_OK)
