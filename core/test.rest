@@ -1,10 +1,10 @@
 # Test for creating a new Cattle
 POST http://127.0.0.1:8000/core/cattle/
 Content-Type: application/json
-Authorization: bar eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ2Njg1NjY4LCJpYXQiOjE3NDY2ODQ3NjgsImp0aSI6ImIwOWI0OTdlNjhmZjQzMWZhMGQwNDJhOTcwNDdlOWY4IiwidXNlcl9pZCI6MjN9.t_1yOZZPErQUVAmkXCyV5S7HQnnidtJudcHVj_678aM
+# Authorization: bar eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ2Njg1NjY4LCJpYXQiOjE3NDY2ODQ3NjgsImp0aSI6ImIwOWI0OTdlNjhmZjQzMWZhMGQwNDJhOTcwNDdlOWY4IiwidXNlcl9pZCI6MjN9.t_1yOZZPErQUVAmkXCyV5S7HQnnidtJudcHVj_678aM
 
 {
-  "ear_tag_no": "ET1235",
+  "ear_tag_no": "ET1234",
   "breed": "Holstein",
   "birth_date": "2022-06-15",
   "gender": "female",
@@ -16,7 +16,7 @@ Authorization: bar eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNj
 
 ### Test for getting a list of all Cattle
 GET http://127.0.0.1:8000/core/cattle/
-Authorization: Token 086cdd121c76739369ca92d8c1fb1541098ce29d
+# Authorization: Token 086cdd121c76739369ca92d8c1fb1541098ce29d
 
 ### Test for retrieving a specific Cattle by ID
 GET http://127.0.0.1:8000/core/cattle/12/
@@ -43,12 +43,12 @@ DELETE http://127.0.0.1:8000/core/cattle/1/
 Authorization: Token 086cdd121c76739369ca92d8c1fb1541098ce29d
 
 ### Test for creating a new Insemination
-POST http://127.0.0.1:8000/core/insemination/
+POST http://127.0.0.1:8000/core/inseminations/create/
 Content-Type: application/json
-Authorization: Token 086cdd121c76739369ca92d8c1fb1541098ce29d
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ3MDc4NDU5LCJpYXQiOjE3NDcwNzY2NTksImp0aSI6Ijc4ZWIyOGExZGRiYTQ0Zjc4N2Y5Yzg1YWE0NmUzNzYxIiwidXNlcl9pZCI6N30.nZB_2CkkNT5fksEsMbVYsjDpym-KIfygZoKj-UZDqmI
 
 {
-  "cattle": 2,
+  "cattle": 1,
   "insemination_date": "2024-02-20",
   "insemination_type": "artificial",
   "notes": "Insemination after heat detection."

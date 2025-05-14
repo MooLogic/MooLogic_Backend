@@ -13,4 +13,6 @@ urlpatterns = [
     path('google-login/', views.GoogleLogin.as_view(), name='google-login'),
     path('update-role/', views.update_user_role, name='update-role'),
     path('join-farm/', views.update_worker_farm, name='join-farm'),
+
+    path('user/<int:user_id>/', views.get_user_by_id, name='get-user'),
 ]

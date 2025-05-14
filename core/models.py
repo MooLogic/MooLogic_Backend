@@ -7,19 +7,15 @@ class Cattle(models.Model):
     GENDER_CHOICES = [
         ('male', 'Male'),
         ('female', 'Female'),
-       
     ]
 
     LIFE_STAGE_CHOICES = [
         ('calf', 'Calf'),
         ('heifer', 'Heifer'),
         ('cow', 'Cow'),
-        ('bull', 'Bull'),
     ]
 
-
     GESTATION_STATUS_CHOICES = [
-
         ('not_pregnant', 'Not Pregnant'),
         ('pregnant', 'Pregnant'),
         ('calving', 'Calving'),
@@ -27,7 +23,7 @@ class Cattle(models.Model):
 
     breed = models.CharField(max_length=100, blank=True, null=True)
     birth_date = models.DateField(blank=True, null=True)
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='unknown')
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='female')  # Default set to avoid 'unknown'
     life_stage = models.CharField(max_length=10, choices=LIFE_STAGE_CHOICES, default='calf')
     ear_tag_no = models.CharField(max_length=100, unique=True)
     dam_id = models.CharField(max_length=100, blank=True, null=True)
@@ -44,126 +40,116 @@ class Cattle(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def calculate_life_stage(self):
+    def calculate_life_stage_value(self):
         if not self.birth_date:
-            return
+            return self.life_stage
         age_in_months = (timezone.now().date() - self.birth_date).days // 30
         if self.gender == 'female':
             if age_in_months < 12:
-                self.life_stage = 'calf'
+                return 'calf'
             elif 12 <= age_in_months < 24:
-                self.life_stage = 'heifer'
+                return 'heifer'
             elif age_in_months >= 24 and self.last_calving_date:
-                self.life_stage = 'cow'
+                return 'cow'
         elif self.gender == 'male':
             if age_in_months < 12:
-                self.life_stage = 'calf'
+                return 'calf'
             else:
-                self.life_stage = 'bull'
-        self.save()
+                return 'bull'  # Consider adding 'bull' to choices
+        return self.life_stage
 
-    def update_gestation_status(self):
+    def calculate_gestation_status_value(self):
         if self.last_insemination_date:
-            gestation_period = (timezone.now().date() - self.last_insemination_date).days
-            if gestation_period < 280:
-                self.gestation_status = 'pregnant'
-            elif gestation_period >= 280:
-                self.gestation_status = 'calving'
-        else:
-            self.gestation_status = 'not_pregnant'
-        self.save()
+            days = (timezone.now().date() - self.last_insemination_date).days
+            if days < 280:
+                return 'pregnant'
+            else:
+                return 'calving'
+        return 'not_pregnant'
 
-    def estimate_expected_calving_date(self):
+    def calculate_expected_calving_date(self):
         if self.last_insemination_date:
-            self.expected_calving_date = self.last_insemination_date + timedelta(days=280)
-            self.save()
-        return self.expected_calving_date
+            return self.last_insemination_date + timedelta(days=280)
+        return None
 
-    def estimate_expected_insemination_date(self):
+    def calculate_expected_insemination_date(self):
         if self.last_calving_date:
-            self.expected_insemination_date = self.last_calving_date + timedelta(days=60)
-            self.save()
-        return self.expected_insemination_date
+            return self.last_calving_date + timedelta(days=60)
+        return None
 
     def generate_alerts(self):
         alerts = []
         today = timezone.now().date()
 
-        # Heifer first breeding alert
-        if self.life_stage == 'heifer':
+        if self.birth_date:
             age_in_months = (today - self.birth_date).days // 30
-            if 15 <= age_in_months <= 18:
+
+            if self.life_stage == 'heifer' and 15 <= age_in_months <= 18:
                 alerts.append({'message': f"Heifer {self.ear_tag_no} is ready for first breeding.", 'priority': 'Medium'})
 
-        # Pregnancy check alert
         if self.last_insemination_date:
             check_date = self.last_insemination_date + timedelta(days=30)
             if today >= check_date - timedelta(days=7):
                 alerts.append({'message': f"Pregnancy check due for {self.ear_tag_no} on {check_date}.", 'priority': 'High'})
 
-        # Expected calving alert
-        if self.expected_calving_date:
-            if today >= self.expected_calving_date - timedelta(days=14):
-                alerts.append({'message': f"Cattle {self.ear_tag_no} is expected to calve on {self.expected_calving_date}.", 'priority': 'Emergency'})
+        if self.expected_calving_date and today >= self.expected_calving_date - timedelta(days=14):
+            alerts.append({'message': f"Cattle {self.ear_tag_no} is expected to calve on {self.expected_calving_date}.", 'priority': 'Emergency'})
 
-        # Next insemination alert
-        if self.expected_insemination_date:
-            if today >= self.expected_insemination_date - timedelta(days=14):
-                alerts.append({'message': f"Next insemination recommended around {self.expected_insemination_date} for {self.ear_tag_no}.", 'priority': 'Medium'})
+        if self.expected_insemination_date and today >= self.expected_insemination_date - timedelta(days=14):
+            alerts.append({'message': f"Next insemination recommended around {self.expected_insemination_date} for {self.ear_tag_no}.", 'priority': 'Medium'})
 
         return alerts
 
     def save(self, *args, **kwargs):
-        self.calculate_life_stage()
-        self.update_gestation_status()
-        self.estimate_expected_calving_date()
-        self.estimate_expected_insemination_date()
+        self.life_stage = self.calculate_life_stage_value()
+        self.gestation_status = self.calculate_gestation_status_value()
+        self.expected_calving_date = self.calculate_expected_calving_date()
+        self.expected_insemination_date = self.calculate_expected_insemination_date()
         super().save(*args, **kwargs)
 
 
 class Insemination(models.Model):
-    cattle = models.ForeignKey(Cattle, on_delete=models.CASCADE, related_name='inseminations', help_text="The cattle associated with this insemination.")
-    insemination_date = models.DateField(help_text="The date of insemination.")
-    insemination_type = models.CharField(max_length=50, choices=[('natural', 'Natural'), ('artificial', 'Artificial')], help_text="The type of insemination (natural or artificial).")
-    notes = models.TextField(blank=True, null=True, help_text="Additional notes about the insemination.")
+    cattle = models.ForeignKey(Cattle, on_delete=models.CASCADE, related_name='inseminations', null=True, blank=True)
+    bull_id = models.CharField(max_length=100, blank=True, null=True)
 
-    class Meta:
-        verbose_name = "Insemination"
-        verbose_name_plural = "Inseminations"
+    
+    INSEMINATION_METHOD_CHOICES = [
+        ('natural', 'Natural'),
+        ('artificial', 'Artificial'),
+    ]
+    INSEMINATION_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('successful', 'Successful'),
+        ('failed', 'Failed'),
+    ]
+    insemination_method = models.CharField(max_length=50, choices=INSEMINATION_METHOD_CHOICES, default='natural', null=True, blank=True)
+    insemination_status = models.CharField(max_length=50, choices=INSEMINATION_STATUS_CHOICES, default='pending', null=True, blank=True)
+    insemination_date = models.DateField(auto_now_add=True)
+    
+    insemination_type = models.CharField(max_length=50, choices=[('natural', 'Natural'), ('artificial', 'Artificial')], null=True, blank=True)  
+    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Insemination for {self.cattle.ear_tag_no} on {self.insemination_date}"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Update the Cattle model with the latest insemination date
         self.cattle.last_insemination_date = self.insemination_date
-        self.cattle.update_gestation_status()
-        self.cattle.estimate_pregnancy_check_date()
-        self.cattle.estimate_expected_calving_date()
-        self.cattle.estimate_special_feeding_dates()
-        self.cattle.generate_alerts()
         self.cattle.save()
 
 
 class BirthRecord(models.Model):
-    cattle = models.ForeignKey(Cattle, on_delete=models.CASCADE, related_name='birth_records', help_text="The cattle associated with this birth record.")
-    calving_date = models.DateField(help_text="The date of calving.")
-    calving_outcome = models.CharField(max_length=50, choices=[('successful', 'Successful'), ('complications', 'Complications')], help_text="The outcome of the calving.")
-    notes = models.TextField(blank=True, null=True, help_text="Additional notes about the calving.")
-
-    class Meta:
-        verbose_name = "Birth Record"
-        verbose_name_plural = "Birth Records"
+    cattle = models.ForeignKey(Cattle, on_delete=models.CASCADE, related_name='birth_records')
+    calving_date = models.DateField()
+    calving_outcome = models.CharField(max_length=50, choices=[('successful', 'Successful'), ('complications', 'Complications')])
+    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Birth Record for {self.cattle.ear_tag_no} on {self.calving_date}"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Update the Cattle model with the latest calving date
         self.cattle.last_calving_date = self.calving_date
-        self.cattle.update_gestation_status()
         self.cattle.save()
 
 
@@ -185,22 +171,14 @@ class Alert(models.Model):
     def __str__(self):
         return f"Alert for {self.cattle.ear_tag_no} - {self.message}"
 
-    def send_notification(self):
-        if self.priority == 'Emergency':
-            # Implement SMS and phone call notification logic here
-            pass
+
 class Farm(models.Model):
-    name = models.CharField(max_length=100, help_text="The name of the farm.", unique=True)
-    farm_code = models.CharField(max_length=100, unique=True, help_text="The unique code for the farm.", blank=True, null=True)
-    location = models.CharField(max_length=100, help_text="The location of the farm.")
-    contact = models.CharField(max_length=100, help_text="The contact number of the farm.")
+    name = models.CharField(max_length=100, unique=True)
+    farm_code = models.CharField(max_length=100, unique=True, blank=True, null=True)
+    location = models.CharField(max_length=100)
+    contact = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-
-    class Meta:
-        verbose_name = "Farm"
-        verbose_name_plural = "Farms"
 
     def __str__(self):
         return f"{self.name} ({self.location})"

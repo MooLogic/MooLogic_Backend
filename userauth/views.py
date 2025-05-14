@@ -88,6 +88,30 @@ def login(request):
     }, status=status.HTTP_200_OK)
 
 
+#get user by id
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_by_id(request, user_id):
+    """
+    Get user by ID.
+    """
+    try:
+        user = User.objects.get(id=user_id)
+        return Response({
+            'id': user.id,
+            'email': user.email,
+            'username': user.username,
+            'full_name': user.full_name,
+            'phone_number': user.phone_number,
+            'farm': user.farm.farm_code if user.farm else None,
+            'profile_picture': user.profile_picture.url if user.profile_picture else None,
+            'role': user.role,
+            'language': user.language,
+            'worker_role': user.worker_role,
+        }, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def request_password_reset(request):
@@ -338,7 +362,6 @@ def update_worker_farm(request):
         user.is_active = True  # Activate the worker once assigned
         print(user)
         print(farm)
-
         user.save()
 
         return Response({'message': 'Worker assigned to farm successfully'}, status=status.HTTP_200_OK)
@@ -348,3 +371,5 @@ def update_worker_farm(request):
 
     except Farm.DoesNotExist:
         return Response({'error': 'Farm not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
