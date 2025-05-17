@@ -1,0 +1,5 @@
+torch 
+pytorch-lightning 
+scikit-learn 
+torchmetrics 
+pandas

@@ -9,6 +9,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from django.utils.timezone import now
 from django.db.models import Sum
+from core.models import Cattle
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -40,14 +41,55 @@ def add_milk_record(request):
     Add a new milk record.
     """
     if request.method == 'POST':
-        serializer = Milk_recordSerializer(data=request.data)
+        
+        cattle = Cattle.objects.filter(ear_tag_no=request.data['cattle_tag']).first()
+        print(cattle.id)
+
+       
+        data = {
+            'cattle_tag': cattle.id,
+            'quantity': request.data['quantity'],
+            'shift': request.data['shift'],
+            'ear_tag_no': request.data['cattle_tag'],
+            
+        }
+        #if a record with day today and shift already exists, return an error
+        if Milk_record.objects.filter(date=now().date(), shift=request.data['shift']).exists():
+            return Response({"error": "Record for today and this shift already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = Milk_recordSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            # If the serializer is not valid, return the errors
+            print(request.data)
+            print(serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    else:
+        return Response({"error": "Invalid request method"}, status=status.HTTP_400_BAD_REQUEST)
+
+#function to update milk records
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_milk_record(request, record_id):
+    """
+    Update a milk record.
+    """
+    try:
+        milk_record = Milk_record.objects.get(id=record_id)
+    except Milk_record.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'PUT':
+        serializer = Milk_recordSerializer(milk_record, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
+@api_view
+@permission_classes([IsAuthenticated])
 def get_milk_production(cattle_id, days):
     """
     Get milk production grouped by date for the last `days` days.
@@ -86,7 +128,8 @@ def milk_production_by_cattle_last_300_days(request, cattle_id):
 
 
 # Functions for overall farm production
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_farm_milk_production(days):
     """
     Get milk production grouped by date for the last `days` days.

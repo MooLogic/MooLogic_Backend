@@ -18,7 +18,7 @@ class Cattle(models.Model):
     GESTATION_STATUS_CHOICES = [
         ('not_pregnant', 'Not Pregnant'),
         ('pregnant', 'Pregnant'),
-        ('calving', 'Calving'),
+        
     ]
 
     breed = models.CharField(max_length=100, blank=True, null=True)

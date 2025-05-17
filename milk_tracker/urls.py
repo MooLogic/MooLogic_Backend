@@ -16,4 +16,5 @@ urlpatterns = [
     # General milk records
     path('milk-records/', views.milk_records, name='milk-records'),
     path('add-milk-record/', views.add_milk_record, name='add-milk-record'),
+    path('update-milk-record/<int:record_id>/', views.update_milk_record, name='update-milk-record'),
 ]
