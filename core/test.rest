@@ -1,5 +1,5 @@
 # Test for creating a new Cattle
-POST http://127.0.0.1:8000/core/cattle/
+POST http://127.0.0.1:8000/core/cattle/create
 Content-Type: application/json
 # Authorization: bar eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ2Njg1NjY4LCJpYXQiOjE3NDY2ODQ3NjgsImp0aSI6ImIwOWI0OTdlNjhmZjQzMWZhMGQwNDJhOTcwNDdlOWY4IiwidXNlcl9pZCI6MjN9.t_1yOZZPErQUVAmkXCyV5S7HQnnidtJudcHVj_678aM
 
