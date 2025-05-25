@@ -11,5 +11,6 @@ urlpatterns = [
     path('milk/', include('milk_tracker.urls')),
     path('health/', include('health_manager.urls')),
     # path('health/', include('health_manager.urls'))
+    path('api/predictor/', include('predictor.urls', namespace='predictor')),
 
 ]
