@@ -9,8 +9,9 @@ from torchvision import transforms
 import pickle
 import os
 from rest_framework.permissions import AllowAny 
-
-
+# Assuming your trained code (MultiLabelCNN class, etc.) is in a file 
+# within your Django project that can be imported.
+# For example, you might place it in a 'ml_models' directory.
 from image_training.img_det import MultiLabelCNN 
 
 # Define the image transformation
