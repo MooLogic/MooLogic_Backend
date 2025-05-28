@@ -12,5 +12,6 @@ urlpatterns = [
     path('health/', include('health_manager.urls')),
     # path('health/', include('health_manager.urls'))
     path('api/predictor/', include('predictor.urls', namespace='predictor')),
+    path('api/prompt_prediction/',include('prompt_prediction.urls',namespace='prompt_prediction')),
 
 ]
