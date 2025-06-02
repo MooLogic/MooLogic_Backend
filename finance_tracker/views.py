@@ -8,6 +8,13 @@ from django.db.models import Sum
 from .serializers import IncomeRecordSerializer, ExpenseRecordSerializer, ProfitSnapshotSerializer
 from datetime import date
 from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+from openpyxl import Workbook
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from io import BytesIO
+from datetime import datetime
 #crud for the income record 
 #create income record
 @api_view(['POST'])
@@ -327,3 +334,197 @@ def generate_profit_snapshot_with_alerts(request):
         return Response(response_data, status=status.HTTP_201_CREATED)
     
     return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def monthly_finance_summary(request):
+    """
+    Get monthly finance summary for income and expenses
+    """
+    current_year = date.today().year
+    
+    # Initialize data structure for all months
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    monthly_data = {month: {'income': 0, 'expenses': 0} for month in months}
+    
+    # Get income records for current year
+    income_records = IncomeRecord.objects.filter(
+        recorded_by=request.user,
+        date__year=current_year
+    ).values('date', 'amount')
+    
+    # Get expense records for current year
+    expense_records = ExpenseRecord.objects.filter(
+        recorded_by=request.user,
+        date__year=current_year
+    ).values('date', 'amount')
+    
+    # Aggregate income by month
+    for record in income_records:
+        month = record['date'].strftime('%b')
+        monthly_data[month]['income'] += float(record['amount'])
+    
+    # Aggregate expenses by month
+    for record in expense_records:
+        month = record['date'].strftime('%b')
+        monthly_data[month]['expenses'] += float(record['amount'])
+    
+    # Format data for frontend
+    formatted_data = [
+        {
+            'month': month,
+            'income': monthly_data[month]['income'],
+            'expenses': monthly_data[month]['expenses'],
+            'cashFlow': monthly_data[month]['income'] - monthly_data[month]['expenses']
+        }
+        for month in months
+    ]
+    
+    return Response(formatted_data)
+
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_financial_records(request):
+    """
+    Export financial records in either PDF or Excel format
+    """
+    export_format = request.GET.get('format', 'pdf')
+    
+    # Get income and expense records
+    income_records = IncomeRecord.objects.filter(recorded_by=request.user).values(
+        'date', 'category_name', 'amount', 'description'
+    ).order_by('date')
+    
+    expense_records = ExpenseRecord.objects.filter(recorded_by=request.user).values(
+        'date', 'category_name', 'amount', 'description'
+    ).order_by('date')
+
+    if export_format.lower() == 'excel':
+        # Create Excel workbook
+        wb = Workbook()
+        
+        # Create Income sheet
+        ws_income = wb.active
+        ws_income.title = "Income Records"
+        ws_income.append(['Date', 'Category', 'Amount (ETB)', 'Description'])
+        
+        for record in income_records:
+            ws_income.append([
+                record['date'].strftime('%Y-%m-%d'),
+                record['category_name'],
+                float(record['amount']),
+                record['description']
+            ])
+        
+        # Create Expense sheet
+        ws_expense = wb.create_sheet("Expense Records")
+        ws_expense.append(['Date', 'Category', 'Amount (ETB)', 'Description'])
+        
+        for record in expense_records:
+            ws_expense.append([
+                record['date'].strftime('%Y-%m-%d'),
+                record['category_name'],
+                float(record['amount']),
+                record['description']
+            ])
+        
+        # Create response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename=financial_records.xlsx'
+        wb.save(response)
+        return response
+    
+    else:  # PDF format
+        # Create PDF buffer
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
+        
+        # Add title
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        title = f'Financial Records Report - {current_date}'
+        elements.append(Table([[title]], style=[
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTSIZE', (0, 0), (-1, -1), 16),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+        ]))
+        
+        # Income Records Table
+        income_data = [['Date', 'Category', 'Amount (ETB)', 'Description']]
+        for record in income_records:
+            income_data.append([
+                record['date'].strftime('%Y-%m-%d'),
+                record['category_name'],
+                f"{float(record['amount']):,.2f}",
+                record['description']
+            ])
+        
+        income_table = Table(income_data)
+        income_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('ALIGN', (2, 1), (2, -1), 'RIGHT'),
+        ]))
+        
+        elements.append(Table([['Income Records']], style=[
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTSIZE', (0, 0), (-1, -1), 14),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(income_table)
+        elements.append(Table([[' ']], style=[('BOTTOMPADDING', (0, 0), (-1, -1), 20)]))
+        
+        # Expense Records Table
+        expense_data = [['Date', 'Category', 'Amount (ETB)', 'Description']]
+        for record in expense_records:
+            expense_data.append([
+                record['date'].strftime('%Y-%m-%d'),
+                record['category_name'],
+                f"{float(record['amount']):,.2f}",
+                record['description']
+            ])
+        
+        expense_table = Table(expense_data)
+        expense_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('ALIGN', (2, 1), (2, -1), 'RIGHT'),
+        ]))
+        
+        elements.append(Table([['Expense Records']], style=[
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTSIZE', (0, 0), (-1, -1), 14),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        elements.append(expense_table)
+        
+        # Build PDF
+        doc.build(elements)
+        pdf = buffer.getvalue()
+        buffer.close()
+        
+        # Create response
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename=financial_records.pdf'
+        response.write(pdf)
+        return response 
