@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from core.models import Farm  # Assuming Farm model is in core app
 
 
 class CustomUserManager(BaseUserManager):
@@ -50,7 +49,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     worker_role = models.CharField(max_length=20, choices=WORKER_ROLE_CHOICES, default='generalpurpose',
                                    blank=True, null=True)
-    farm = models.ForeignKey(Farm, on_delete=models.CASCADE, null=True, blank=True)
+    farm = models.ForeignKey('core.Farm', on_delete=models.CASCADE, null=True, blank=True)
 
     get_email_notification = models.BooleanField(default=True)
     get_push_notification = models.BooleanField(default=False)
@@ -72,8 +71,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = CustomUserManager()
 
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['email']
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
 
     class Meta:
         verbose_name = 'User'
