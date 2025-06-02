@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.utils import timezone
+import uuid
 
 
 class CustomUserManager(BaseUserManager):
@@ -16,6 +18,7 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('email_verified', True)
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError("Superuser must have is_staff=True.")
@@ -31,6 +34,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=255, blank=True, default='')
     phone_number = models.CharField(max_length=15, blank=True, default='')
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
+    bio = models.TextField(blank=True, default='')
+
+    # Email verification fields
+    email_verified = models.BooleanField(default=False)
+    email_verification_token = models.UUIDField(null=True, blank=True, default=uuid.uuid4)
+    email_verification_sent_at = models.DateTimeField(null=True, blank=True)
+
+    # Password reset fields
+    password_reset_token = models.UUIDField(null=True, blank=True)
+    password_reset_sent_at = models.DateTimeField(null=True, blank=True)
 
     ROLE_CHOICES = (
         ('owner', 'Farm Owner'),
@@ -51,9 +64,10 @@ class User(AbstractBaseUser, PermissionsMixin):
                                    blank=True, null=True)
     farm = models.ForeignKey('core.Farm', on_delete=models.CASCADE, null=True, blank=True)
 
-    get_email_notification = models.BooleanField(default=True)
-    get_push_notification = models.BooleanField(default=False)
-    get_sms_notification = models.BooleanField(default=False)
+    # Notification preferences
+    get_email_notifications = models.BooleanField(default=True)
+    get_push_notifications = models.BooleanField(default=False)
+    get_sms_notifications = models.BooleanField(default=False)
 
     oversite_access = models.BooleanField(default=False)
 
@@ -92,3 +106,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def has_module_perms(self, app_label):
         return self.is_superuser
+
+    def generate_email_verification_token(self):
+        self.email_verification_token = uuid.uuid4()
+        self.email_verification_sent_at = timezone.now()
+        self.save()
+        return self.email_verification_token
+
+    def generate_password_reset_token(self):
+        self.password_reset_token = uuid.uuid4()
+        self.password_reset_sent_at = timezone.now()
+        self.save()
+        return self.password_reset_token

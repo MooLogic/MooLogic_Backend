@@ -12,6 +12,7 @@ from .views import (
     get_cattle_health_records, get_pending_pregnancy_checks, update_insemination, delete_insemination,
     get_birth_record, update_birth_record, delete_birth_record, get_cattle_birth_history,
     get_cattle_gestation_timeline, create_gestation_check, update_milestone,
+    get_unread_alerts, mark_alert_as_read, mark_all_alerts_as_read, delete_alert,
 )
 
 urlpatterns = [
@@ -71,6 +72,10 @@ urlpatterns = [
 
     # Alert URLs
     path('alerts/', list_alerts, name='list_alerts'),
+    path('alerts/unread/', get_unread_alerts, name='get_unread_alerts'),
+    path('alerts/<int:alert_id>/mark-read/', mark_alert_as_read, name='mark_alert_as_read'),
+    path('alerts/mark-all-read/', mark_all_alerts_as_read, name='mark_all_alerts_as_read'),
+    path('alerts/<int:alert_id>/', delete_alert, name='delete_alert'),
 
     # Farm URLs
     path('farms/', get_farms, name='get_farms'),

@@ -153,8 +153,13 @@ class BirthRecordSerializer(serializers.ModelSerializer):
 class AlertSerializer(serializers.ModelSerializer):
     class Meta:
         model = Alert
-        fields = '__all__'
-        
+        fields = [
+            'id', 'title', 'description', 'date', 'type', 'priority',
+            'read', 'source_type', 'source_id', 'metadata',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
 class FarmSerializer(serializers.ModelSerializer):
     class Meta:
         model = Farm

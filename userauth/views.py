@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authtoken.models import Token
 from rest_framework import status
+from django.conf import settings
 
 from core.models import Farm
 from .models import User
@@ -13,12 +14,18 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.contrib.auth import update_session_auth_hash
+from django.utils import timezone
+from datetime import timedelta
+from django.template.loader import render_to_string
+from django.core.files.storage import default_storage
+import os
 
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+import uuid
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
@@ -127,61 +134,76 @@ def get_farm_users(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def request_password_reset(request):
+    """Request password reset email."""
     email = request.data.get('email')
-
     if not email:
-        return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'error': 'Email is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         user = User.objects.get(email=email)
     except User.DoesNotExist:
-        return Response({'error': 'User with this email does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({
+            'error': 'No user found with this email'
+        }, status=status.HTTP_404_NOT_FOUND)
 
-    # Generate password reset token
-    token = default_token_generator.make_token(user)
-    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    # Generate reset token
+    token = user.generate_password_reset_token()
+    reset_url = f"{settings.FRONTEND_URL}/reset-password/{user.id}/{token}"
 
-    reset_url = f"http://localhost:3000/reset-password/{uidb64}/{token}"  # Change frontend URL
-
-    # Send email
-    send_mail(
-        'Password Reset Request',
-        f'Click the link to reset your password: {reset_url}',
-        'no-reply@example.com',
-        [email],
-        fail_silently=False,
-    )
-
-    return Response({'message': 'Password reset email sent'}, status=status.HTTP_200_OK)
-
-
-
+    try:
+        send_mail(
+            'Reset your password',
+            f'Click this link to reset your password: {reset_url}',
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        return Response({
+            'message': 'Password reset email sent'
+        })
+    except Exception as e:
+        print(f"Error sending password reset email: {str(e)}")
+        return Response({
+            'error': 'Failed to send password reset email'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def reset_password(request):
-    uidb64 = request.data.get('uidb64')
+    """Reset password with token."""
+    user_id = request.data.get('user_id')
     token = request.data.get('token')
     new_password = request.data.get('new_password')
 
-    if not uidb64 or not token or not new_password:
-        return Response({'error': 'All fields are required'}, status=status.HTTP_400_BAD_REQUEST)
+    if not all([user_id, token, new_password]):
+        return Response({
+            'error': 'All fields are required'
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        uid = urlsafe_base64_decode(uidb64).decode()
-        user = User.objects.get(pk=uid)
-    except (User.DoesNotExist, ValueError):
-        return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({
+            'error': 'Invalid user'
+        }, status=status.HTTP_404_NOT_FOUND)
 
-    if not default_token_generator.check_token(user, token):
-        return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)
+    # Check if token is valid and not expired (24 hours)
+    if (user.password_reset_token != token or
+        user.password_reset_sent_at + timedelta(hours=24) < timezone.now()):
+        return Response({
+            'error': 'Invalid or expired reset token'
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Reset password
     user.set_password(new_password)
+    user.password_reset_token = None
+    user.password_reset_sent_at = None
     user.save()
 
-    return Response({'message': 'Password reset successful'}, status=status.HTTP_200_OK)
-
+    return Response({
+        'message': 'Password reset successfully'
+    })
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
@@ -383,5 +405,209 @@ def update_worker_farm(request):
 
     except Farm.DoesNotExist:
         return Response({'error': 'Farm not found'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_email_verification(request):
+    """Check if user's email is verified."""
+    return Response({
+        'is_verified': request.user.email_verified
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def send_verification_email(request):
+    """Send email verification link."""
+    user = request.user
+    if user.email_verified:
+        return Response({
+            'message': 'Email is already verified'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Generate new verification token
+    token = user.generate_email_verification_token()
+    
+    verification_url = f"{settings.FRONTEND_URL}/verify-email/{user.id}/{token}"
+    
+    # HTML email template
+    html_message = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2563eb;">Verify Your Email Address</h2>
+                <p>Hello {user.full_name or user.username},</p>
+                <p>Thank you for registering with Loonko. To complete your registration and access all features, please verify your email address by clicking the button below:</p>
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="{verification_url}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email Address</a>
+                </p>
+                <p>Or copy and paste this link in your browser:</p>
+                <p style="background-color: #f3f4f6; padding: 10px; border-radius: 5px;">{verification_url}</p>
+                <p>This link will expire in 24 hours.</p>
+                <p>If you did not create an account with MooLogic, please ignore this email.</p>
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                <p style="color: #6b7280; font-size: 0.875rem;">This is an automated message, please do not reply to this email.</p>
+            </div>
+        </body>
+    </html>
+    """
+    
+    # Plain text version for email clients that don't support HTML
+    plain_message = f"""
+    Hello {user.full_name or user.username},
+
+    Thank you for registering with MooLogic. To verify your email address, please click the following link:
+
+    {verification_url}
+
+    This link will expire in 24 hours.
+
+    If you did not create an account with MooLogic, please ignore this email.
+    """
+    
+    try:
+        send_mail(
+            subject='Verify your MooLogic email address',
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        return Response({
+            'message': 'Verification email sent successfully'
+        })
+    except Exception as e:
+        print(f"Error sending verification email: {str(e)}")
+        return Response({
+            'error': 'Failed to send verification email'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_email(request):
+    """Verify email with token."""
+    user_id = request.data.get('user_id')
+    token = request.data.get('token')
+
+    print(f"Verifying email for user_id: {user_id}, token: {token}")
+
+    try:
+        user = User.objects.get(id=user_id)
+        print(f"Found user: {user.email}")
+        print(f"User verification token: {user.email_verification_token}")
+        print(f"Token sent at: {user.email_verification_sent_at}")
+    except User.DoesNotExist:
+        return Response({
+            'error': 'Invalid user'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    # Check if token is valid and not expired (24 hours)
+    if (str(user.email_verification_token) != token or
+        user.email_verification_sent_at + timedelta(hours=24) < timezone.now()):
+        print(f"Token validation failed:")
+        print(f"Stored token: {user.email_verification_token}")
+        print(f"Received token: {token}")
+        print(f"Token sent at: {user.email_verification_sent_at}")
+        print(f"Current time: {timezone.now()}")
+        return Response({
+            'error': 'Invalid or expired verification token'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Mark email as verified and generate a new token
+    user.email_verified = True
+    user.email_verification_token = uuid.uuid4()  # Generate new token instead of setting to None
+    user.email_verification_sent_at = None  # Reset sent time
+    user.save()
+
+    return Response({
+        'message': 'Email verified successfully'
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_profile_picture(request):
+    """Update user's profile picture."""
+    if 'profile_picture' not in request.FILES:
+        return Response({
+            'error': 'No image file provided'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    user = request.user
+    
+    # Delete old profile picture if it exists
+    if user.profile_picture:
+        try:
+            default_storage.delete(user.profile_picture.path)
+        except:
+            pass
+
+    # Save new profile picture
+    file = request.FILES['profile_picture']
+    filename = default_storage.save(f'profile_pictures/{user.id}_{file.name}', file)
+    user.profile_picture = filename
+    user.save()
+
+    return Response({
+        'message': 'Profile picture updated successfully',
+        'profile_picture_url': request.build_absolute_uri(user.profile_picture.url)
+    })
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    """Update user profile information."""
+    user = request.user
+    data = request.data
+
+    # Update basic information
+    if 'name' in data:
+        user.full_name = data['name']
+    if 'username' in data:
+        if User.objects.exclude(id=user.id).filter(username=data['username']).exists():
+            return Response({
+                'error': 'Username already taken'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        user.username = data['username']
+    if 'email' in data and data['email'] != user.email:
+        if User.objects.exclude(id=user.id).filter(email=data['email']).exists():
+            return Response({
+                'error': 'Email already taken'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        user.email = data['email']
+        user.email_verified = False  # Require re-verification for new email
+    if 'phone_number' in data:
+        user.phone_number = data['phone_number']
+    if 'bio' in data:
+        user.bio = data['bio']
+    if 'language' in data:
+        user.language = data['language']
+
+    # Update notification preferences
+    if 'get_email_notifications' in data:
+        user.get_email_notifications = data['get_email_notifications']
+    if 'get_push_notifications' in data:
+        user.get_push_notifications = data['get_push_notifications']
+    if 'get_sms_notifications' in data:
+        user.get_sms_notifications = data['get_sms_notifications']
+
+    # Update worker role if applicable
+    if user.role == 'worker' and 'worker_role' in data:
+        user.worker_role = data['worker_role']
+
+    user.save()
+
+    return Response({
+        'message': 'Profile updated successfully',
+        'user': UserSerializer(user).data
+    })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def current_user(request):
+    """
+    Get the current authenticated user's profile data
+    """
+    serializer = UserSerializer(request.user)
+    return Response(serializer.data)
 
 

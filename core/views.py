@@ -132,7 +132,7 @@ def create_cattle(request):
                 response_data['alerts'] = alerts
             
             return Response(response_data, status=status.HTTP_201_CREATED)
-        
+    
         return Response(
             {
                 "error": "Invalid data provided",
@@ -811,9 +811,111 @@ def get_cattle_birth_history(request, cattle_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_alerts(request):
-    alerts = Alert.objects.filter(cattle__farm=request.user.farm)
-    serializer = AlertSerializer(alerts, many=True)
-    return Response({"count": alerts.count(), "results": serializer.data})
+    """
+    Get all alerts for the user's farm.
+    Supports filtering by:
+    - type (query param)
+    - read status (query param)
+    - priority (query param)
+    """
+    try:
+        alerts = Alert.objects.filter(cattle__farm=request.user.farm)
+
+        # Apply filters if provided
+        alert_type = request.query_params.get('type')
+        if alert_type:
+            alerts = alerts.filter(type=alert_type)
+
+        read_status = request.query_params.get('read')
+        if read_status is not None:
+            is_read = read_status.lower() == 'true'
+            alerts = alerts.filter(read=is_read)
+
+        priority = request.query_params.get('priority')
+        if priority:
+            alerts = alerts.filter(priority=priority)
+
+        # Order by priority (High to Low) and then by date (newest first)
+        priority_order = {'high': 0, 'medium': 1, 'low': 2}
+        alerts = sorted(alerts, key=lambda x: (priority_order.get(x.priority.lower(), 3), -x.created_at.timestamp()))
+
+        serializer = AlertSerializer(alerts, many=True)
+        return Response({
+            "count": len(alerts),
+            "results": serializer.data
+        })
+    except Exception as e:
+        print(f"Error in list_alerts: {str(e)}")  # Add debug logging
+        return Response(
+            {"error": f"Failed to fetch alerts: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_unread_alerts(request):
+    """Get all unread alerts for the user's farm."""
+    try:
+        alerts = Alert.objects.filter(
+            cattle__farm=request.user.farm,
+            is_read=False
+        ).order_by('-created_at')
+        
+        serializer = AlertSerializer(alerts, many=True)
+        return Response({
+            "count": alerts.count(),
+            "results": serializer.data
+        })
+    except Exception as e:
+        return Response(
+            {"error": f"Failed to fetch unread alerts: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def mark_alert_as_read(request, alert_id):
+    """Mark a specific alert as read."""
+    try:
+        alert = get_object_or_404(Alert, id=alert_id, cattle__farm=request.user.farm)
+        alert.read = True
+        alert.save()
+        serializer = AlertSerializer(alert)
+        return Response(serializer.data)
+    except Exception as e:
+        print(f"Error in mark_alert_as_read: {str(e)}")  # Add debug logging
+        return Response(
+            {"error": f"Failed to mark alert as read: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_all_alerts_as_read(request):
+    """Mark all alerts for the user's farm as read."""
+    try:
+        Alert.objects.filter(cattle__farm=request.user.farm).update(read=True)
+        return Response({"message": "All alerts marked as read"})
+    except Exception as e:
+        print(f"Error in mark_all_alerts_as_read: {str(e)}")  # Add debug logging
+        return Response(
+            {"error": f"Failed to mark all alerts as read: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_alert(request, alert_id):
+    """Delete a specific alert."""
+    try:
+        alert = get_object_or_404(Alert, id=alert_id, cattle__farm=request.user.farm)
+        alert.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except Exception as e:
+        return Response(
+            {"error": f"Failed to delete alert: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 # Farm Views
 @api_view(['GET'])

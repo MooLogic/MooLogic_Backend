@@ -7,11 +7,12 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id', 'email', 'username', 'full_name', 'phone_number', 
-            'profile_picture', 'role', 'worker_role', 'farm',
-            'get_email_notification', 'get_push_notification', 
-            'get_sms_notification', 'oversite_access', 'language'
+            'profile_picture', 'role', 'worker_role', 'farm', 'bio',
+            'get_email_notifications', 'get_push_notifications', 
+            'get_sms_notifications', 'oversite_access', 'language',
+            'email_verified'
         )
-        read_only_fields = ('id', 'date_joined', 'last_login')
+        read_only_fields = ('id', 'date_joined', 'last_login', 'email_verified')
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)

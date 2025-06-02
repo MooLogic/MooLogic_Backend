@@ -806,29 +806,38 @@ class BirthRecord(models.Model):
 
 class Alert(models.Model):
     PRIORITY_CHOICES = [
-        ('Low', 'Low'),
-        ('Medium', 'Medium'),
-        ('High', 'High'),
-        ('Emergency', 'Emergency'),
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
     ]
 
-    ALERT_TYPE_CHOICES = [
-        ('pregnancy_check', 'Pregnancy Check'),
-        ('vaccination', 'Vaccination'),
-        ('treatment', 'Treatment'),
-        ('general', 'General'),
+    TYPE_CHOICES = [
+        ('health', 'Health'),
+        ('reproduction', 'Reproduction'),
+        ('production', 'Production'),
+        ('inventory', 'Inventory'),
+        ('financial', 'Financial'),
+        ('maintenance', 'Maintenance'),
     ]
 
     cattle = models.ForeignKey(Cattle, on_delete=models.CASCADE, related_name='alerts')
-    message = models.TextField()
-    due_date = models.DateField()
-    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='Low')
-    alert_type = models.CharField(max_length=20, choices=ALERT_TYPE_CHOICES, default='general')
-    is_read = models.BooleanField(default=False)
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    date = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='health')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='low')
+    read = models.BooleanField(default=False)
+    source_type = models.CharField(max_length=50, blank=True)  # e.g., 'treatment', 'vaccination', etc.
+    source_id = models.CharField(max_length=50, blank=True)    # ID of the source record
+    metadata = models.JSONField(null=True, blank=True)         # Additional data
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
-        return f"Alert for {self.cattle.ear_tag_no} - {self.message}"
+        return f"{self.title} - {self.cattle.ear_tag_no} ({self.type})"
 
 class GestationMilestone(models.Model):
     MILESTONE_TYPES = [

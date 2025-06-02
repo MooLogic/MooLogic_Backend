@@ -16,4 +16,12 @@ urlpatterns = [
     path('farm-users/', views.get_farm_users, name='farm-users'),
 
     path('user/<int:user_id>/', views.get_user_by_id, name='get-user'),
+    
+    # New endpoints for profile management
+    path('update-profile/', views.update_profile, name='update-profile'),
+    path('update-profile-picture/', views.update_profile_picture, name='update-profile-picture'),
+    path('check-email-verification/', views.check_email_verification, name='check-email-verification'),
+    path('send-verification-email/', views.send_verification_email, name='send-verification-email'),
+    path('verify-email/', views.verify_email, name='verify-email'),
+    path('current-user/', views.current_user, name='current-user'),
 ]
