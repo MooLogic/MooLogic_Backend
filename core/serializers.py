@@ -49,16 +49,16 @@ class CattleSerializer(serializers.ModelSerializer):
 class InseminationSerializer(serializers.ModelSerializer):
     cattle_details = CattleSerializer(source='cattle', read_only=True)
     pregnancy_check_date = serializers.DateField(
-        input_formats=['%Y-%m-%d', '%m/%d/%Y', '%d-%m-%Y'],
+        input_formats=['%d-%m-%Y', '%Y-%m-%d', '%m/%d/%Y'],  # Prioritize DD-MM-YYYY format
         required=False,
         allow_null=True
     )
     insemination_date = serializers.DateField(
-        input_formats=['%Y-%m-%d', '%m/%d/%Y', '%d-%m-%Y'],
+        input_formats=['%d-%m-%Y', '%Y-%m-%d', '%m/%d/%Y'],  # Prioritize DD-MM-YYYY format
         required=True
     )
     expected_calving_date = serializers.DateField(
-        input_formats=['%Y-%m-%d', '%m/%d/%Y', '%d-%m-%Y'],
+        input_formats=['%d-%m-%Y', '%Y-%m-%d', '%m/%d/%Y'],  # Prioritize DD-MM-YYYY format
         required=False,
         allow_null=True,
         read_only=True

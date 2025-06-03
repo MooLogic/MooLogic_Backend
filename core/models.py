@@ -633,10 +633,11 @@ class Insemination(models.Model):
             # Create alert for next vaccination/treatment if needed
             Alert.objects.create(
                 cattle=self.cattle,
-                message=f"Schedule first trimester check-up for {self.cattle.ear_tag_no}",
-                due_date=timezone.now().date() + timedelta(days=7),
-                priority='Medium',
-                alert_type='general'
+                title=f"Schedule first trimester check-up for {self.cattle.ear_tag_no}",
+                description=f"First trimester check-up due for {self.cattle.ear_tag_no}",
+                date=timezone.now(),
+                type='reproduction',
+                priority='Medium'
             )
 
         elif self.pregnancy_check_status == 'negative':
@@ -652,10 +653,11 @@ class Insemination(models.Model):
             # Create alert for next insemination
             Alert.objects.create(
                 cattle=self.cattle,
-                message=f"Schedule next insemination for {self.cattle.ear_tag_no}",
-                due_date=next_insemination_date,
-                priority='Medium',
-                alert_type='general'
+                title=f"Schedule next insemination for {self.cattle.ear_tag_no}",
+                description=f"Next insemination attempt due for {self.cattle.ear_tag_no}",
+                date=timezone.now(),
+                type='reproduction',
+                priority='Medium'
             )
 
         self.cattle.save()

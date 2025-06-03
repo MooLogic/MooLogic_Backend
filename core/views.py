@@ -13,6 +13,10 @@ from .serializers import (
     GestationDataSerializer, GestationCheckSerializer, GestationMilestoneSerializer
 )
 from django.db.models import Q
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -81,7 +85,7 @@ def list_gestation_data(request):
                 'vaccination_records': cow.vaccination_records.all(),
                 'periodic_treatment_records': cow.periodic_treatment_records.all(),
                 'periodic_vaccination_records': cow.periodic_vaccination_records.all(),
-                'alerts': cow.alerts.filter(is_read=False)
+                'alerts': cow.alerts.filter(read=False)
             }
             gestation_data.append(data)
 
@@ -123,7 +127,7 @@ def create_cattle(request):
         serializer = CattleSerializer(data=data, context={'request': request})
         if serializer.is_valid():
             new_cattle = serializer.save()
-            
+                
             # Generate initial alerts if needed
             alerts = new_cattle.generate_alerts()
             
@@ -579,6 +583,54 @@ def create_insemination(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+def send_alert_email(user, subject, message, priority):
+    """Utility function to send alert emails"""
+    html_message = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #2563eb;">Loonko Alert: {subject}</h2>
+                <div style="margin: 20px 0; padding: 15px; border-radius: 5px; background-color: {
+                    '#fee2e2' if priority == 'High' else '#fef3c7' if priority == 'Medium' else '#f3f4f6'
+                };">
+                    <p style="margin: 0; color: {
+                        '#dc2626' if priority == 'High' else '#d97706' if priority == 'Medium' else '#374151'
+                    };">
+                        Priority: {priority}
+                    </p>
+                    <p>{message}</p>
+                </div>
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                <p style="color: #6b7280; font-size: 0.875rem;">This is an automated message from Loonko Farm Management System.</p>
+            </div>
+        </body>
+    </html>
+    """
+    
+    # Plain text version
+    plain_message = f"""
+    Loonko Alert: {subject}
+    Priority: {priority}
+
+    {message}
+
+    This is an automated message from Loonko Farm Management System.
+    """
+    
+    try:
+        result = send_mail(
+            subject=f"Loonko Alert: {subject}",
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_message,
+            fail_silently=False
+        )
+        return result > 0  # Return True if email was sent successfully
+    except Exception as e:
+        print(f"Failed to send email alert: {str(e)}")
+        return False
+
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_insemination(request, pk):
@@ -592,47 +644,155 @@ def update_insemination(request, pk):
     
     # Validate pregnancy check date if provided
     if request.data.get('pregnancy_check_date'):
-        check_date = datetime.strptime(request.data['pregnancy_check_date'], "%d-%m-%Y").date()
-        if check_date < insemination.insemination_date:
-            return Response(
-                {'error': 'Pregnancy check date cannot be before insemination date'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        try:
+            # Try to parse date in DD-MM-YYYY format
+            check_date = datetime.strptime(request.data['pregnancy_check_date'], "%d-%m-%Y").date()
+            if check_date < insemination.insemination_date:
+                return Response(
+                    {'error': 'Pregnancy check date cannot be before insemination date'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except ValueError:
+            # If parsing fails, let the serializer handle the validation
+            pass
 
+    # Add detailed logging for debugging
+    print(f"Request data: {request.data}")
+    print(f"Insemination instance: {insemination.__dict__}")
+    
     serializer = InseminationSerializer(insemination, data=request.data, partial=True)
     if serializer.is_valid():
-        updated_insemination = serializer.save()
+        print("Serializer is valid")
+        print(f"Validated data: {serializer.validated_data}")
+        print(f"Instance before save: {insemination.__dict__}")
+        try:
+            updated_insemination = serializer.save()
+            print(f"Instance after save: {updated_insemination.__dict__}")
+            print(f"Updated status: {updated_insemination.pregnancy_check_status}")
+            
+            # Return the updated data
+            return Response(serializer.data)
+        except Exception as e:
+            print(f"Error during save: {str(e)}")
+            import traceback
+            print("Traceback:", traceback.format_exc())
+            return Response(
+                {'error': f'Save failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    else:
+        print(f"Serializer errors: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         # If pregnancy status changed to confirmed
         if old_status != 'confirmed' and updated_insemination.pregnancy_check_status == 'confirmed':
-            # Create calving preparation alert
-            Alert.objects.create(
-                cattle=updated_insemination.cattle,
-                message=f"Prepare for calving - Expected date: {updated_insemination.expected_calving_date}",
-                due_date=updated_insemination.expected_calving_date - timedelta(days=14),
-                priority='High',
-                alert_type='general'
-            )
+            print(f"Creating calving alert for cattle {updated_insemination.cattle.ear_tag_no}")
+            try:
+                calving_alert = Alert.objects.create(
+                    cattle=updated_insemination.cattle,
+                    title=f"Prepare for calving - Expected date: {updated_insemination.expected_calving_date}",
+                    description=f"Calving preparation required for cattle {updated_insemination.cattle.ear_tag_no}",
+                    date=timezone.now(),
+                    type='reproduction',
+                    priority='High'
+                )
+                print(f"Calving alert created successfully: {calving_alert.id}")
+            except Exception as e:
+                print(f"Error creating calving alert: {str(e)}")
+                import traceback
+                print("Traceback:", traceback.format_exc())
+                # Continue even if alert creation fails
+                
+            # Send calving preparation email
+            if not send_alert_email(
+                user=request.user,
+                subject="Calving Preparation Required",
+                message=f"Cattle {updated_insemination.cattle.ear_tag_no} is confirmed pregnant. "
+                       f"Expected calving date is {updated_insemination.expected_calving_date}. "
+                       f"Please start preparation 14 days before the expected date.",
+                priority='High'
+            ):
+                print(f"Failed to send calving preparation email to {request.user.email}")
             
             # Create vaccination reminder
-            Alert.objects.create(
+            try:
+                vaccination_alert = Alert.objects.create(
+                    cattle=updated_insemination.cattle,
+                    title=f"Schedule pregnancy vaccination for {updated_insemination.cattle.ear_tag_no}",
+                    description=f"Pregnancy vaccination due for cattle {updated_insemination.cattle.ear_tag_no}",
+                    date=timezone.now(),
+                    type='reproduction',
+                    priority='High'
+                )
+                print(f"Vaccination alert created successfully: {vaccination_alert.id}")
+            except Exception as e:
+                print(f"Error creating vaccination alert: {str(e)}")
+                import traceback
+                print("Traceback:", traceback.format_exc())
+                # Continue even if alert creation fails
+            
+            # Send vaccination reminder email
+            if not send_alert_email(
+                user=request.user,
+                subject="Pregnancy Vaccination Required",
+                message=f"Please schedule pregnancy vaccination for cattle {updated_insemination.cattle.ear_tag_no} "
+                       f"within the next 7 days.",
+                priority='High'
+            ):
+                print(f"Failed to send vaccination reminder email to {request.user.email}")
+            
+            # Send calving preparation email
+            if not send_alert_email(
+                user=request.user,
+                subject="Calving Preparation Required",
+                message=f"Cattle {updated_insemination.cattle.ear_tag_no} is confirmed pregnant. "
+                       f"Expected calving date is {updated_insemination.expected_calving_date}. "
+                       f"Please start preparation 14 days before the expected date.",
+                priority='High'
+            ):
+                print(f"Failed to send calving preparation email to {request.user.email}")
+            
+            # Create vaccination reminder
+            vaccination_alert = Alert.objects.create(
                 cattle=updated_insemination.cattle,
-                message=f"Schedule pregnancy vaccination for {updated_insemination.cattle.ear_tag_no}",
-                due_date=timezone.now().date() + timedelta(days=7),
-                priority='High',
-                alert_type='general'
+                title=f"Schedule pregnancy vaccination for {updated_insemination.cattle.ear_tag_no}",
+                description=f"Pregnancy vaccination due for cattle {updated_insemination.cattle.ear_tag_no}",
+                date=timezone.now(),
+                type='reproduction',
+                priority='High'
             )
+            
+            # Send vaccination reminder email
+            if not send_alert_email(
+                user=request.user,
+                subject="Pregnancy Vaccination Required",
+                message=f"Please schedule pregnancy vaccination for cattle {updated_insemination.cattle.ear_tag_no} "
+                       f"within the next 7 days.",
+                priority='High'
+            ):
+                print(f"Failed to send vaccination reminder email to {request.user.email}")
         
         # If pregnancy status changed to negative
         elif old_status != 'negative' and updated_insemination.pregnancy_check_status == 'negative':
             # Create next insemination reminder
-            Alert.objects.create(
+            next_insemination_alert = Alert.objects.create(
                 cattle=updated_insemination.cattle,
-                message="Schedule next insemination - Previous attempt unsuccessful",
-                due_date=timezone.now().date() + timedelta(days=21),
-                priority='Medium',
-                alert_type='general'
+                title="Schedule next insemination - Previous attempt unsuccessful",
+                description=f"Next insemination attempt due for cattle {updated_insemination.cattle.ear_tag_no}",
+                date=timezone.now(),
+                type='reproduction',
+                priority='Medium'
             )
+            
+            # Send next insemination reminder email
+            if not send_alert_email(
+                user=request.user,
+                subject="Schedule Next Insemination",
+                message=f"The pregnancy test for cattle {updated_insemination.cattle.ear_tag_no} was negative. "
+                       f"Please schedule the next insemination attempt within 21 days.",
+                priority='Medium'
+            ):
+                print(f"Failed to send insemination reminder email to {request.user.email}")
         
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
