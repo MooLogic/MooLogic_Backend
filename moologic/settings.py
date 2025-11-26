@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'dj_rest_auth',
     'dj_rest_auth.registration',
     'rest_framework.authtoken',
+    'drf_yasg',
 ]
 
 # Custom User Model
@@ -222,3 +223,12 @@ LOGGING = {
         'level': 'DEBUG' if DEBUG else 'INFO',
     },
 }
+
+
+
+
+SITE_ID = 1
+ACCOUNT_EMAIL_VERIFICATION = "optional"
+ACCOUNT_AUTHENTICATION_METHOD = "username"
+ACCOUNT_EMAIL_REQUIRED = False
+ACCOUNT_USERNAME_REQUIRED = False

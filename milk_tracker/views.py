@@ -49,10 +49,10 @@ def milk_production_by_cattle(request, cattle_id):
 @permission_classes([IsAuthenticated])
 def add_milk_record(request):
     """
-    Add a new milk record with enhanced validation.
+    Add a new milk record.
     """
     try:
-        # Get the cattle and verify farm ownership
+        # Get the cattle
         cattle = Cattle.objects.get(
             ear_tag_no=request.data['cattle_tag'],
             farm=request.user.farm
@@ -64,26 +64,24 @@ def add_milk_record(request):
             'quantity': request.data['quantity'],
             'shift': request.data['shift'],
             'ear_tag_no': request.data['cattle_tag'],
+            'date': request.data['date'],
+            'time': request.data['time']
         }
 
+        # Create and save the record
         serializer = Milk_recordSerializer(data=data)
-        print(serializer.errors)
         if serializer.is_valid():
-            try:
-                serializer.save()
-                
-                # Check if this affects milking frequency
-                cattle.update_milking_frequency()
-                
-                return Response({
-                    "message": "Milk record added successfully",
-                    "data": serializer.data,
-                    "next_milking": cattle.get_next_milking_time()
-                }, status=status.HTTP_201_CREATED)
-            except ValidationError as e:
-                return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+            serializer.save()
+            return Response({
+                "message": "Milk record added successfully",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response({
+                "error": "Invalid data",
+                "details": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
     except Cattle.DoesNotExist:
         return Response(
             {"error": "Cattle not found or not in your farm"},
@@ -91,7 +89,8 @@ def add_milk_record(request):
         )
     except Exception as e:
         return Response(
-            {"error": str(e)},
+            {"error": "An unexpected error occurred",
+            "details": str(e)},
             status=status.HTTP_400_BAD_REQUEST
         )
 

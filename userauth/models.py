@@ -5,11 +5,13 @@ import uuid
 
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, username, password=None, **extra_fields):
-        if not email:
-            raise ValueError("The Email field must be set")
-        email = self.normalize_email(email)
-        user = self.model(email=email, username=username, **extra_fields)
+    def create_user(self, email=None, username=None, password=None, **extra_fields):
+        if not email and not extra_fields.get("phone_number"):
+            raise ValueError("A user must provide either an email or a phone number.")
+
+        user = self.model(email=self.normalize_email(email) if email else None,
+                          username=username,
+                          **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -19,17 +21,15 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('email_verified', True)
+        extra_fields.setdefault('phone_verified', True)
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError("Superuser must have is_staff=True.")
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError("Superuser must have is_superuser=True.")
+        return self.create_user(email=email, username=username, password=password, **extra_fields)
 
-        return self.create_user(email, username, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
+
     username = models.CharField(max_length=150, unique=True)
     full_name = models.CharField(max_length=255, blank=True, default='')
     phone_number = models.CharField(max_length=15, blank=True, default='')
@@ -40,6 +40,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     email_verified = models.BooleanField(default=False)
     email_verification_token = models.UUIDField(null=True, blank=True, default=uuid.uuid4)
     email_verification_sent_at = models.DateTimeField(null=True, blank=True)
+
+    phone_verified = models.BooleanField(default=False)
+    phone_verification_token = models.UUIDField(null=True, blank=True, default=uuid.uuid4)  
+    phone_verification_sent_at = models.DateTimeField(null=True, blank=True)
 
     # Password reset fields
     password_reset_token = models.UUIDField(null=True, blank=True)

@@ -1,5 +1,5 @@
 from django.contrib.auth import authenticate
-from .serializers import UserSerializer
+from .serializers import UserSerializer , SignupSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authtoken.models import Token
@@ -27,40 +27,67 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 import uuid
 
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
 
-@api_view(['POST'])
+
+@swagger_auto_schema(
+    method='post',
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["full_name", "password"],
+        properties={
+            "full_name": openapi.Schema(type=openapi.TYPE_STRING),
+            "email": openapi.Schema(type=openapi.TYPE_STRING, format="email"),
+            "phone_number": openapi.Schema(type=openapi.TYPE_STRING),
+            "password": openapi.Schema(type=openapi.TYPE_STRING),
+        },
+    ),
+    responses={201: "User created successfully"},
+)
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def signup(request):
-    """
-    User signup view with JWT authentication.
-    """
-    email = request.data.get('email')
-    username = request.data.get('username')
-    password = request.data.get('password')
+    serializer = SignupSerializer(data=request.data)
 
-    if not email or not username or not password:
-        return Response({'error': 'All fields are required'}, status=status.HTTP_400_BAD_REQUEST)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    if User.objects.filter(email=email).exists():
-        return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
-
-    user = User.objects.create_user(email=email, username=username, password=password)
+    user = serializer.save()
 
     refresh = RefreshToken.for_user(user)
+
     return Response({
-        'message': 'User registered successfully',
-        'user': {
-            'id': user.id,
-            'email': user.email,
-            'username': user.username,
+        "message": "User registered successfully",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "full_name": user.full_name,
+            "username": user.username,
         },
-        'access_token': str(refresh.access_token),
-        'refresh_token': str(refresh),
+        "access_token": str(refresh.access_token),
+        "refresh_token": str(refresh),
     }, status=status.HTTP_201_CREATED)
 
 
+
+
+@swagger_auto_schema(
+    method='post',
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["email", "password"],
+        properties={
+            "email": openapi.Schema(type=openapi.TYPE_STRING, format="email"),
+            "password": openapi.Schema(type=openapi.TYPE_STRING),
+        },
+    ),
+    responses={200: "Login successful"},
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
@@ -97,6 +124,11 @@ def login(request):
 
 
 #get user by id
+@swagger_auto_schema(
+    method='get',
+    
+    responses={200: "User retrieved successfully"},
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_by_id(request, user_id):
@@ -131,6 +163,18 @@ def get_farm_users(request):
     print(serializer.data)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+@swagger_auto_schema(
+    method='post',
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["email"],
+        properties={
+            "email": openapi.Schema(type=openapi.TYPE_STRING, format="email"),
+        },
+    ),
+    responses={200: "Password reset email sent"},
+)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def request_password_reset(request):
@@ -151,6 +195,7 @@ def request_password_reset(request):
     # Generate reset token
     token = user.generate_password_reset_token()
     reset_url = f"{settings.FRONTEND_URL}/reset-password/{user.id}/{token}"
+    print(reset_url)
 
     try:
         send_mail(
@@ -204,6 +249,7 @@ def reset_password(request):
     return Response({
         'message': 'Password reset successfully'
     })
+
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])

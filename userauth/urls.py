@@ -24,4 +24,5 @@ urlpatterns = [
     path('send-verification-email/', views.send_verification_email, name='send-verification-email'),
     path('verify-email/', views.verify_email, name='verify-email'),
     path('current-user/', views.current_user, name='current-user'),
+    path('dj-rest-auth/google/', views.GoogleLogin.as_view(), name='google_login'),
 ]
