@@ -10,9 +10,14 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from django.db.models import Sum, Q
 from core.models import Cattle
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: openapi.Response('Milk records', schema=Milk_recordSerializer(many=True).data if False else None)}
+)
 def milk_records(request):
     """
     List all milk records for the user's farm.
@@ -26,6 +31,10 @@ def milk_records(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: Milk_recordSerializer(many=True)}
+)
 def milk_production_by_cattle(request, cattle_id):
     """
     Get milk production by cattle id.
@@ -47,6 +56,10 @@ def milk_production_by_cattle(request, cattle_id):
     
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=Milk_recordSerializer,
+    responses={201: Milk_recordSerializer}
+)
 def add_milk_record(request):
     """
     Add a new milk record.
@@ -96,6 +109,9 @@ def add_milk_record(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: openapi.Response('Missing records list')}
+)
 def check_missing_records(request):
     """
     Check for missing milk records in the user's farm.
@@ -108,6 +124,10 @@ def check_missing_records(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: openapi.Response('Milking schedule')}
+)
 def get_cattle_milking_schedule(request, cattle_id):
     """
     Get the milking schedule for a specific cattle.
@@ -131,6 +151,17 @@ def get_cattle_milking_schedule(request, cattle_id):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'milking_frequency': openapi.Schema(type=openapi.TYPE_STRING),
+            'custom_milking_times': openapi.Schema(type=openapi.TYPE_STRING),
+        }
+    ),
+    responses={200: openapi.Response('Updated milking settings')}
+)
 def update_cattle_milking_settings(request, cattle_id):
     """
     Update milking settings for a specific cattle.
@@ -168,6 +199,11 @@ def update_cattle_milking_settings(request, cattle_id):
 #function to update milk records
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('record_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Milk record ID')],
+    request_body=Milk_recordSerializer,
+    responses={200: Milk_recordSerializer}
+)
 def update_milk_record(request, record_id):
     """
     Update a milk record.
@@ -204,21 +240,37 @@ def get_milk_production(cattle_id, days):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: Milk_recordSerializer(many=True)}
+)
 def milk_production_by_cattle_last_7_days(request, cattle_id):
     return Response(get_milk_production(cattle_id, 7))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: Milk_recordSerializer(many=True)}
+)
 def milk_production_by_cattle_last_30_days(request, cattle_id):
     return Response(get_milk_production(cattle_id, 30))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: Milk_recordSerializer(many=True)}
+)
 def milk_production_by_cattle_last_90_days(request, cattle_id):
     return Response(get_milk_production(cattle_id, 90))
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: Milk_recordSerializer(many=True)}
+)
 def milk_production_by_cattle_last_300_days(request, cattle_id):
     return Response(get_milk_production(cattle_id, 300))
 
@@ -240,24 +292,36 @@ def get_farm_milk_production(days):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: openapi.Response('Farm production records')}
+)
 def farm_production_last_7_days(request):
     records = get_farm_milk_production(7)
     return Response(records)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: openapi.Response('Farm production records')}
+)
 def farm_production_last_30_days(request):
     records = get_farm_milk_production(30)
     return Response(records)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: openapi.Response('Farm production records')}
+)
 def farm_production_last_90_days(request):
     records = get_farm_milk_production(90)
     return Response(records)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: openapi.Response('Lactating cattle list')}
+)
 def get_lactating_cattle(request):
     """
     Get all lactating cattle from the current farm.
@@ -334,6 +398,9 @@ def get_lactating_cattle(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: openapi.Response("Today's production stats")}
+)
 def get_today_production_stats(request):
     """
     Get milk production statistics for today including:

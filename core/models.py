@@ -53,8 +53,39 @@ class Cattle(models.Model):
     ear_tag_no = models.CharField(max_length=50, unique=True)
     breed = models.CharField(max_length=100, blank=True)
     birth_date = models.DateField(null=True, blank=True)
+    birth_weight = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Birth weight in kilograms"
+    )
+    current_weight = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Latest recorded weight in kilograms"
+    )
+    weaning_date = models.DateField(null=True, blank=True, help_text="Date calf was weaned")
+    weaning_weight = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Weight at weaning in kilograms"
+    )
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     life_stage = models.CharField(max_length=10, choices=LIFE_STAGE_CHOICES)
+    life_stage_started_at = models.DateField(
+        null=True,
+        blank=True,
+        help_text="When the animal entered the current life stage"
+    )
+    is_service_bull = models.BooleanField(
+        default=False,
+        help_text="Allow a male animal to progress beyond the calf stage"
+    )
     dam_id = models.CharField(max_length=50, blank=True)
     sire_id = models.CharField(max_length=50, blank=True)
     is_purchased = models.BooleanField(default=False)
@@ -111,7 +142,7 @@ class Cattle(models.Model):
 
     def update_calving_stats(self):
         """Update calving statistics when a new birth record is added"""
-        birth_records = self.birthrecord_set.all().order_by('calving_date')
+        birth_records = self.birth_records.all().order_by('calving_date')
         
         # Update calving count
         self.calving_count = birth_records.count()
@@ -178,7 +209,7 @@ class Cattle(models.Model):
                         'ear_tag': record.calf_ear_tag
                     }
                 }
-                for record in self.birthrecord_set.all().order_by('calving_date')
+                for record in self.birth_records.all().order_by('calving_date')
             ]
         }
 
@@ -193,23 +224,26 @@ class Cattle(models.Model):
             'first_calving_age': (self.first_calving_date - self.birth_date).days / 365 if self.first_calving_date and self.birth_date else None
         }
 
-    def calculate_life_stage_value(self):
+    def get_age_in_months(self):
         if not self.birth_date:
+            return None
+        return (timezone.now().date() - self.birth_date).days // 30
+
+    def calculate_life_stage_value(self):
+        age_in_months = self.get_age_in_months()
+        if age_in_months is None:
             return self.life_stage
-        age_in_months = (timezone.now().date() - self.birth_date).days // 30
-        if self.gender == 'female':
-            if age_in_months < 12:
-                return 'calf'
-            elif 12 <= age_in_months < 24:
-                return 'heifer'
-            elif age_in_months >= 24:
-                return 'cow'
-        elif self.gender == 'male':
-            if age_in_months < 12:
-                return 'calf'
-            else:
+
+        if self.gender == 'male':
+            if self.is_service_bull and age_in_months >= 12:
                 return 'bull'
-        return self.life_stage
+            return 'calf'
+
+        if age_in_months < 12:
+            return 'calf'
+        if age_in_months < 24:
+            return 'heifer'
+        return 'cow'
 
     def calculate_gestation_status_value(self):
         if self.last_insemination_date:
@@ -241,6 +275,11 @@ class Cattle(models.Model):
     def calculate_expected_insemination_date(self):
         if self.last_calving_date:
             return self.last_calving_date + timedelta(days=60)
+        if self.last_insemination_date:
+            return None
+        if self.gender == 'female' and self.birth_date:
+            # Heifers should get a first service window around 15 months
+            return self.birth_date + timedelta(days=450)
         return None
 
     def generate_alerts(self):
@@ -248,12 +287,24 @@ class Cattle(models.Model):
         today = timezone.now().date()
 
         if self.birth_date:
-            age_in_months = (today - self.birth_date).days // 30
-            if self.life_stage == 'heifer' and 15 <= age_in_months <= 18:
+            age_in_days = (today - self.birth_date).days
+            age_in_months = age_in_days // 30
+
+            if self.life_stage == 'calf' and not self.weaning_date:
+                weaning_due = self.birth_date + timedelta(days=60)
+                if today >= weaning_due - timedelta(days=7):
+                    alerts.append({
+                        'message': f"Calf {self.ear_tag_no} is due for weaning on {weaning_due}.",
+                        'priority': 'Medium',
+                        'due_date': weaning_due,
+                    })
+
+            if self.life_stage == 'heifer' and not self.last_insemination_date and age_in_months >= 15:
+                first_service_start = self.birth_date + timedelta(days=450)
                 alerts.append({
-                    'message': f"Heifer {self.ear_tag_no} is ready for first breeding.",
-                    'priority': 'Medium',
-                    'due_date': today,
+                    'message': f"Heifer {self.ear_tag_no} is entering the breeding window; plan first service around {first_service_start}.",
+                    'priority': 'High',
+                    'due_date': first_service_start,
                 })
 
         if self.last_insemination_date:
@@ -299,13 +350,110 @@ class Cattle(models.Model):
 
         return alerts
 
+    def create_stage_alerts(self):
+        stage_templates = {
+            'calf': {
+                'title': f"Calf management for {self.ear_tag_no}",
+                'description': "Monitor growth, vaccinations, and plan weaning.",
+                'type': 'health',
+                'priority': 'medium',
+                'source': 'calf_stage'
+            },
+            'heifer': {
+                'title': f"Heifer breeding window for {self.ear_tag_no}",
+                'description': "Plan first insemination and track pre-breeding health checks.",
+                'type': 'reproduction',
+                'priority': 'high',
+                'source': 'heifer_stage'
+            },
+            'cow': {
+                'title': f"Cow production for {self.ear_tag_no}",
+                'description': "Manage lactation, dry-off, and upcoming calving milestones.",
+                'type': 'production',
+                'priority': 'medium',
+                'source': 'cow_stage'
+            },
+            'bull': {
+                'title': f"Service bull schedule for {self.ear_tag_no}",
+                'description': "Track semen collection or natural service rotations.",
+                'type': 'maintenance',
+                'priority': 'low',
+                'source': 'bull_stage'
+            }
+        }
+
+        stage_info = stage_templates.get(self.life_stage)
+        if not stage_info:
+            return
+
+        Alert.objects.update_or_create(
+            cattle=self,
+            source_type='life_stage',
+            source_id=stage_info['source'],
+            defaults={
+                'title': stage_info['title'],
+                'description': stage_info['description'],
+                'type': stage_info['type'],
+                'priority': stage_info['priority']
+            }
+        )
+
     def save(self, *args, **kwargs):
+        """
+        Consolidated save: update life stage, gestation status/stage,
+        expected dates before saving, then run post-save tasks like
+        generating gestation milestones.
+        """
+        previous_stage = None
+        if self.pk:
+            previous_stage = Cattle.objects.filter(pk=self.pk).values_list('life_stage', flat=True).first()
+
+        # Pre-save calculations
         self.life_stage = self.calculate_life_stage_value()
-        self.gestation_status = self.calculate_gestation_status_value()
-        self.gestation_stage = self.calculate_gestation_stage_value()
-        self.expected_calving_date = self.calculate_expected_calving_date()
+
+        if previous_stage != self.life_stage:
+            if previous_stage is None:
+                self.life_stage_started_at = self.birth_date or timezone.now().date()
+            else:
+                self.life_stage_started_at = timezone.now().date()
+        elif not self.life_stage_started_at:
+            self.life_stage_started_at = self.birth_date or timezone.now().date()
+        # Compute gestation status/stage based on last_insemination_date
+        if self.last_insemination_date:
+            days = (timezone.now().date() - self.last_insemination_date).days
+            if days >= 280:
+                self.gestation_status = 'calving'
+                self.gestation_stage = 'calving'
+            elif days >= 180:
+                self.gestation_status = 'pregnant'
+                self.gestation_stage = 'third_trimester'
+            elif days >= 90:
+                self.gestation_status = 'pregnant'
+                self.gestation_stage = 'second_trimester'
+            elif days >= 0:
+                self.gestation_status = 'pregnant'
+                self.gestation_stage = 'first_trimester'
+            else:
+                self.gestation_status = 'not_pregnant'
+                self.gestation_stage = 'not_pregnant'
+            # Expected dates
+            self.expected_calving_date = self.last_insemination_date + timedelta(days=280)
+        else:
+            self.gestation_status = 'not_pregnant'
+            self.gestation_stage = 'not_pregnant'
+            self.expected_calving_date = None
+
         self.expected_insemination_date = self.calculate_expected_insemination_date()
+
+        # Save once
         super().save(*args, **kwargs)
+
+        if previous_stage != self.life_stage:
+            self.create_stage_alerts()
+
+        # Post-save: generate milestones if pregnant
+        if self.gestation_status == 'pregnant':
+            self.generate_gestation_milestones()
 
     def get_gestation_progress(self):
         """Calculate gestation progress as a percentage"""
@@ -397,34 +545,7 @@ class Cattle(models.Model):
                     description=milestone['description']
                 )
 
-    def save(self, *args, **kwargs):
-        # Update gestation status and stage
-        if self.last_insemination_date:
-            days_pregnant = (timezone.now().date() - self.last_insemination_date).days
-            if days_pregnant >= 0:
-                self.gestation_status = 'pregnant'
-                if days_pregnant <= 95:
-                    self.gestation_stage = 'first_trimester'
-                elif days_pregnant <= 190:
-                    self.gestation_stage = 'second_trimester'
-                elif days_pregnant <= 280:
-                    self.gestation_stage = 'third_trimester'
-                else:
-                    self.gestation_stage = 'calving'
-                    self.gestation_status = 'calving'
-            
-            # Calculate expected calving date
-            self.expected_calving_date = self.last_insemination_date + timedelta(days=280)
-        else:
-            self.gestation_status = 'not_pregnant'
-            self.gestation_stage = 'not_pregnant'
-            self.expected_calving_date = None
-
-        super().save(*args, **kwargs)
-
-        # Generate milestones after save if pregnant
-        if self.gestation_status == 'pregnant':
-            self.generate_gestation_milestones()
+    
 
     def get_milking_schedule(self):
         """Returns the milking schedule based on frequency or custom times"""
@@ -693,7 +814,7 @@ class BirthRecord(models.Model):
     calf_count = models.PositiveIntegerField(default=1)
     calf_gender = models.CharField(max_length=50)
     calf_weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    calf_ear_tag = models.CharField(max_length=100, unique=True, default='TEMP')
+    calf_ear_tag = models.CharField(max_length=100, blank=True, null=True)
     complications = models.TextField(blank=True, null=True)
     veterinary_assistance = models.BooleanField(default=False)
     notes = models.TextField(blank=True, null=True)
@@ -722,13 +843,15 @@ class BirthRecord(models.Model):
                 calf = Cattle.objects.create(
                     ear_tag_no=ear_tag,
                     birth_date=self.calving_date,
+                    birth_weight=self.calf_weight,
                     gender=gender,
                     life_stage='calf',
+                    life_stage_started_at=self.calving_date,
                     dam_id=self.cattle.ear_tag_no,  # Set dam_id to mother's ear tag
                     breed=self.cattle.breed,  # Inherit breed from mother
                     farm=self.cattle.farm,
                     health_status='healthy',
-                    gestation_status='open'
+                    gestation_status='not_pregnant'
                 )
                 print(f"Successfully created calf: ID={calf.id}, Tag={calf.ear_tag_no}, Dam={calf.dam_id}")
                 registered_calves.append(calf)

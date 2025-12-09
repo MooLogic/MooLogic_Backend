@@ -13,6 +13,8 @@ from rest_framework.permissions import AllowAny
 # within your Django project that can be imported.
 # For example, you might place it in a 'ml_models' directory.
 from image_training.img_det import MultiLabelCNN 
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 # Define the image transformation
 # This should be the same transform used during training
@@ -36,6 +38,15 @@ MODEL.eval()
 class ImagePredictionView(APIView):
     permission_classes = [AllowAny] 
 
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'image': openapi.Schema(type=openapi.TYPE_FILE, description='Image file to analyze')
+            }
+        ),
+        responses={200: openapi.Response('Prediction result')}
+    )
     def post(self, request, *args, **kwargs):
         image_file = request.FILES.get('image')
 

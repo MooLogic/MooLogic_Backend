@@ -34,8 +34,9 @@ class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
 @swagger_auto_schema(
-    method='post',
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
         required=["full_name", "password"],
@@ -48,11 +49,10 @@ class GoogleLogin(SocialLoginView):
     ),
     responses={201: "User created successfully"},
 )
-@api_view(["POST"])
-@permission_classes([AllowAny])
 def signup(request):
     serializer = SignupSerializer(data=request.data)
 
+    print(serializer.initial_data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -76,8 +76,9 @@ def signup(request):
 
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
 @swagger_auto_schema(
-    method='post',
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
         required=["email", "password"],
@@ -88,8 +89,6 @@ def signup(request):
     ),
     responses={200: "Login successful"},
 )
-@api_view(['POST'])
-@permission_classes([AllowAny])
 def login(request):
     """
     User login view with JWT authentication using email.
@@ -124,13 +123,11 @@ def login(request):
 
 
 #get user by id
-@swagger_auto_schema(
-    method='get',
-    
-    responses={200: "User retrieved successfully"},
-)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: "User retrieved successfully"},
+)
 def get_user_by_id(request, user_id):
     """
     Get user by ID.
@@ -154,6 +151,9 @@ def get_user_by_id(request, user_id):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: "List of farm users"},
+)
 def get_farm_users(request):
     """
     Get all users in the farm.
@@ -164,8 +164,9 @@ def get_farm_users(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
 @swagger_auto_schema(
-    method='post',
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
         required=["email"],
@@ -175,8 +176,6 @@ def get_farm_users(request):
     ),
     responses={200: "Password reset email sent"},
 )
-@api_view(['POST'])
-@permission_classes([AllowAny])
 def request_password_reset(request):
     """Request password reset email."""
     email = request.data.get('email')
@@ -214,13 +213,28 @@ def request_password_reset(request):
             'error': 'Failed to send password reset email'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["user_id", "token", "new_password"],
+        properties={
+            "user_id": openapi.Schema(type=openapi.TYPE_INTEGER),
+            "token": openapi.Schema(type=openapi.TYPE_STRING),
+            "new_password": openapi.Schema(type=openapi.TYPE_STRING),
+        },
+    ),
+    responses={200: "Password reset successfully"},
+)
 def reset_password(request):
     """Reset password with token."""
-    user_id = request.data.get('user_id')
+    user_id = request.data.get('user_id') 
     token = request.data.get('token')
     new_password = request.data.get('new_password')
+    print(token, user_id, new_password)
+    print("user" if user_id else "none")
 
     if not all([user_id, token, new_password]):
         return Response({
@@ -253,6 +267,25 @@ def reset_password(request):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            "name": openapi.Schema(type=openapi.TYPE_STRING
+            ),
+            "username": openapi.Schema(type=openapi.TYPE_STRING),
+            "email": openapi.Schema(type=openapi.TYPE_STRING, format="email"),
+            "role": openapi.Schema(type=openapi.TYPE_STRING),
+            "language": openapi.Schema(type=openapi.TYPE_STRING),
+            "phone_number": openapi.Schema(type=openapi.TYPE_STRING),
+            "profile_picture": openapi.Schema(type=openapi.TYPE_STRING, format="binary"),
+            "worker_role": openapi.Schema(type=openapi.TYPE_STRING),
+            "get_email_notification": openapi.Schema(type=openapi.TYPE_BOOLEAN),
+            "get_push_notification": openapi.Schema(type=openapi.TYPE_BOOLEAN),
+            "get_sms_notification": openapi.Schema(type=openapi.TYPE_BOOLEAN),
+        },
+    ),
+)
 def edit_profile(request):
     """
     Edit user profile.
@@ -315,6 +348,16 @@ def edit_profile(request):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["old_password", "new_password"],
+        properties={
+            "old_password": openapi.Schema(type=openapi.TYPE_STRING),
+            "new_password": openapi.Schema(type=openapi.TYPE_STRING),
+        },
+    ),
+)
 def change_password(request):
     """
     Change user password.
@@ -343,6 +386,15 @@ def change_password(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'refresh_token': openapi.Schema(type=openapi.TYPE_STRING)
+        }
+    ),
+    responses={200: "Logout successful"},
+)
 def logout(request):
     """
     Logout user and blacklist the refresh token.
@@ -361,8 +413,18 @@ def logout(request):
 
 from rest_framework_simplejwt.exceptions import TokenError
 
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["refresh_token"],
+        properties={
+            "refresh_token": openapi.Schema(type=openapi.TYPE_STRING),
+        },
+    ),
+)
 def refresh_token(request):
     """
     Refresh access token using refresh token.
@@ -387,6 +449,16 @@ def refresh_token(request):
 
 @api_view(['POST'])  
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+            'role': openapi.Schema(type=openapi.TYPE_STRING),
+        }
+    ),
+    responses={200: "User role updated"},
+)
 def update_user_role(request):
     """
     Update user role.
@@ -420,6 +492,17 @@ def update_user_role(request):
 #function to add aworker to farm
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+            'farm_code': openapi.Schema(type=openapi.TYPE_STRING),
+            'workerRole': openapi.Schema(type=openapi.TYPE_STRING),
+        }
+    ),
+    responses={200: "Worker assigned to farm"},
+)
 def update_worker_farm(request):
     """
     Update a worker's farm and role.
@@ -454,6 +537,9 @@ def update_worker_farm(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: "Email verification status"},
+)
 def check_email_verification(request):
     """Check if user's email is verified."""
     return Response({
@@ -462,6 +548,12 @@ def check_email_verification(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={},
+    ),
+)
 def send_verification_email(request):
     """Send email verification link."""
     user = request.user
@@ -530,6 +622,17 @@ def send_verification_email(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["user_id", "token"],
+        properties={
+            "user_id": openapi.Schema(type=openapi.TYPE_INTEGER
+            ),
+            "token": openapi.Schema(type=openapi.TYPE_STRING),
+        },
+    ),
+)
 def verify_email(request):
     """Verify email with token."""
     user_id = request.data.get('user_id')
@@ -571,6 +674,15 @@ def verify_email(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'profile_picture': openapi.Schema(type=openapi.TYPE_FILE, description='New profile picture file')
+        }
+    ),
+    responses={200: "Profile picture updated"},
+)
 def update_profile_picture(request):
     """Update user's profile picture."""
     if 'profile_picture' not in request.FILES:
@@ -600,6 +712,20 @@ def update_profile_picture(request):
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'name': openapi.Schema(type=openapi.TYPE_STRING),
+            'username': openapi.Schema(type=openapi.TYPE_STRING),
+            'email': openapi.Schema(type=openapi.TYPE_STRING, format='email'),
+            'phone_number': openapi.Schema(type=openapi.TYPE_STRING),
+            'bio': openapi.Schema(type=openapi.TYPE_STRING),
+            'language': openapi.Schema(type=openapi.TYPE_STRING),
+        }
+    ),
+    responses={200: "Profile updated"},
+)
 def update_profile(request):
     """Update user profile information."""
     user = request.user
@@ -649,6 +775,9 @@ def update_profile(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: "Current user data"},
+)
 def current_user(request):
     """
     Get the current authenticated user's profile data

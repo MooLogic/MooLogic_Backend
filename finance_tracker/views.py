@@ -15,10 +15,13 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from io import BytesIO
 from datetime import datetime
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 #crud for the income record 
 #create income record
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(request_body=IncomeRecordSerializer, responses={201: openapi.Response('Created', IncomeRecordSerializer)})
 @csrf_exempt
 def create_income(request):
     if request.method == 'POST':
@@ -60,6 +63,7 @@ def create_income(request):
 #up
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(manual_parameters=[openapi.Parameter('income_id', openapi.IN_PATH, description="Income record id", type=openapi.TYPE_INTEGER)], request_body=IncomeRecordSerializer)
 def update_income(request, income_id):  # Changed parameter name for clarity
     # Get the income record, ensuring it exists
     record = get_object_or_404(IncomeRecord, id=income_id)
@@ -81,6 +85,7 @@ def update_income(request, income_id):  # Changed parameter name for clarity
 #delete income record 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(manual_parameters=[openapi.Parameter('income_id', openapi.IN_PATH, description="Income record id", type=openapi.TYPE_INTEGER)], responses={204: openapi.Response('No Content')})
 def delete_income (request, income_id):
     record = get_object_or_404(IncomeRecord, id=income_id)
     record.delete()
@@ -90,6 +95,7 @@ def delete_income (request, income_id):
 # total income
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(responses={200: openapi.Response('OK')})
 def total_income(request):
      total_income = IncomeRecord.objects.filter(recorded_by=request.user).aggregate(sum=Sum('amount'))
      return Response(total_income)
@@ -98,6 +104,7 @@ def total_income(request):
 #income breakdown
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(manual_parameters=[openapi.Parameter('farm_id', openapi.IN_PATH, description="Farm id", type=openapi.TYPE_INTEGER)])
 def income_breakdown(request, farm_id):
     # Filter records by farm and user
     records = IncomeRecord.objects.filter(recorded_by=request.user)
@@ -123,6 +130,7 @@ def income_breakdown(request, farm_id):
 #list of all income 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(responses={200: openapi.Response('OK', IncomeRecordSerializer(many=True))})
 def list_income(request):
     records = IncomeRecord.objects.filter(recorded_by=request.user)
     serializer = IncomeRecordSerializer(records, many=True)
@@ -133,6 +141,7 @@ def list_income(request):
 #create expense record
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(request_body=ExpenseRecordSerializer, responses={201: openapi.Response('Created', ExpenseRecordSerializer)})
 def create_expense(request):
     if request.method == 'POST':
         data = request.data.copy()
@@ -173,6 +182,7 @@ def create_expense(request):
 #update expense record
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(manual_parameters=[openapi.Parameter('expense_id', openapi.IN_PATH, description="Expense record id", type=openapi.TYPE_INTEGER)], request_body=ExpenseRecordSerializer)
 def update_expense(request, expense_id):
     record = get_object_or_404(ExpenseRecord, id=expense_id)
     
@@ -193,6 +203,7 @@ def update_expense(request, expense_id):
 #delete expense record
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(manual_parameters=[openapi.Parameter('expense_id', openapi.IN_PATH, description="Expense record id", type=openapi.TYPE_INTEGER)], responses={204: openapi.Response('No Content')})
 def delete_expense(request, expense_id):
     record=get_object_or_404(ExpenseRecord, id=expense_id)
     record.delete()
@@ -201,6 +212,7 @@ def delete_expense(request, expense_id):
 # total expense
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(responses={200: openapi.Response('OK')})
 def total_expense(request):
     total_expense = ExpenseRecord.objects.filter(recorded_by=request.user).aggregate(sum=Sum('amount'))
     return Response(total_expense)
@@ -208,6 +220,7 @@ def total_expense(request):
 #expense breakdown
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(manual_parameters=[openapi.Parameter('farm_id', openapi.IN_PATH, description="Farm id", type=openapi.TYPE_INTEGER)])
 def expense_breakdown(request, farm_id):
     records = ExpenseRecord.objects.filter(recorded_by=request.user)
     if not records.exists():
@@ -228,6 +241,7 @@ def expense_breakdown(request, farm_id):
 #list of all expense records
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(responses={200: openapi.Response('OK', ExpenseRecordSerializer(many=True))})
 def list_expense(request):
     records = ExpenseRecord.objects.filter(recorded_by=request.user)
     serializer = ExpenseRecordSerializer(records, many=True)
@@ -236,6 +250,7 @@ def list_expense(request):
 #generate_profit_snapshot
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(manual_parameters=[openapi.Parameter('farm_id', openapi.IN_QUERY, description="Farm id", type=openapi.TYPE_INTEGER)], responses={201: openapi.Response('Created', ProfitSnapshotSerializer)})
 def generate_profit_snapshot(request):
     if request.method == 'POST':
         farm_id = request.GET.get('farm_id')
@@ -267,6 +282,7 @@ def generate_profit_snapshot(request):
 #generate_profit_snapshot_with_alerts
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(manual_parameters=[openapi.Parameter('farm_id', openapi.IN_QUERY, description="Farm id", type=openapi.TYPE_INTEGER)], responses={201: openapi.Response('Created', ProfitSnapshotSerializer)})
 def generate_profit_snapshot_with_alerts(request):
     if request.method == 'POST':
         farm_id = request.GET.get('farm_id')
@@ -338,6 +354,7 @@ def generate_profit_snapshot_with_alerts(request):
     
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(responses={200: openapi.Response('OK')})
 def monthly_finance_summary(request):
     """
     Get monthly finance summary for income and expenses
@@ -386,6 +403,7 @@ def monthly_finance_summary(request):
     
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(manual_parameters=[openapi.Parameter('format', openapi.IN_QUERY, description="Export format: 'pdf' or 'excel'", type=openapi.TYPE_STRING)], responses={200: openapi.Response('File')})
 def export_financial_records(request):
     """
     Export financial records in either PDF or Excel format

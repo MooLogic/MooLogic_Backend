@@ -12,6 +12,8 @@ from .serializers import (
     PeriodicVaccinationRecordSerializer, PeriodicTreatmentRecordSerializer,
     GestationDataSerializer, GestationCheckSerializer, GestationMilestoneSerializer
 )
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from django.db.models import Q
 from django.core.mail import send_mail
 from django.conf import settings
@@ -20,6 +22,9 @@ from django.utils.html import strip_tags
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: CattleSerializer(many=True)},
+)
 def list_cattle(request):
     cattle = Cattle.objects.filter(farm=request.user.farm)
     serializer = CattleSerializer(cattle, many=True, context={'request': request})
@@ -27,6 +32,9 @@ def list_cattle(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: CattleSerializer(many=True)},
+)
 def list_pregnant_cattle(request):
     try:
         # Debug logging
@@ -56,6 +64,9 @@ def list_pregnant_cattle(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: GestationDataSerializer(many=True)},
+)
 def list_gestation_data(request):
     """
     Get comprehensive gestation data for all pregnant cattle in the farm.
@@ -104,6 +115,10 @@ def list_gestation_data(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: CattleSerializer},
+)
 def get_cattle_by_id(request, pk):
     try:
         cattle = Cattle.objects.get(pk=pk, farm=request.user.farm)
@@ -114,6 +129,10 @@ def get_cattle_by_id(request, pk):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=CattleSerializer,
+    responses={201: CattleSerializer}
+)
 def create_cattle(request):
     """
     Create a new cattle record.
@@ -155,6 +174,11 @@ def create_cattle(request):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    request_body=CattleSerializer,
+    responses={200: CattleSerializer}
+)
 def update_cattle(request, pk):
     try:
         cattle = Cattle.objects.get(pk=pk, farm=request.user.farm)
@@ -162,12 +186,20 @@ def update_cattle(request, pk):
         return Response({'error': 'Cattle not found'}, status=status.HTTP_404_NOT_FOUND)
     serializer = CattleSerializer(cattle, data=request.data, context={'request': request})
     if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data)
+        updated_cattle = serializer.save()
+        alerts = updated_cattle.generate_alerts()
+        response_data = serializer.data
+        if alerts:
+            response_data['alerts'] = alerts
+        return Response(response_data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={204: 'No Content'}
+)
 def delete_cattle(request, pk):
     try:
         cattle = Cattle.objects.get(pk=pk, farm=request.user.farm)
@@ -178,6 +210,10 @@ def delete_cattle(request, pk):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: AlertSerializer(many=True)}
+)
 def generate_cattle_alerts(request, cattle_id):
     try:
         cattle = Cattle.objects.get(pk=cattle_id, farm=request.user.farm)
@@ -197,6 +233,10 @@ def generate_cattle_alerts(request, cattle_id):
 # TreatmentRecord Views
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=TreatmentRecordSerializer,
+    responses={201: TreatmentRecordSerializer}
+)
 def create_treatment_record(request):
     data = request.data.copy()
     try:
@@ -218,6 +258,9 @@ def create_treatment_record(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: TreatmentRecordSerializer(many=True)}
+)
 def get_all_treatment_records(request):
     try:
         records = TreatmentRecord.objects.filter(cattle__farm=request.user.farm)
@@ -233,6 +276,10 @@ def get_all_treatment_records(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Treatment Record ID')],
+    responses={200: TreatmentRecordSerializer}
+)
 def get_treatment_record_by_id(request, pk):
     record = get_object_or_404(TreatmentRecord, pk=pk, cattle__farm=request.user.farm)
     serializer = TreatmentRecordSerializer(record)
@@ -240,6 +287,11 @@ def get_treatment_record_by_id(request, pk):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Treatment Record ID')],
+    request_body=TreatmentRecordSerializer,
+    responses={200: TreatmentRecordSerializer}
+)
 def update_treatment_record(request, pk):
     record = get_object_or_404(TreatmentRecord, pk=pk, cattle__farm=request.user.farm)
     serializer = TreatmentRecordSerializer(record, data=request.data)
@@ -250,6 +302,10 @@ def update_treatment_record(request, pk):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Treatment Record ID')],
+    responses={204: 'No Content'}
+)
 def delete_treatment_record(request, pk):
     record = get_object_or_404(TreatmentRecord, pk=pk, cattle__farm=request.user.farm)
     record.delete()
@@ -258,6 +314,10 @@ def delete_treatment_record(request, pk):
 # VaccinationRecord Views
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=VaccinationRecordSerializer,
+    responses={201: VaccinationRecordSerializer}
+)
 def create_vaccination_record(request):
     data = request.data.copy()
     try:
@@ -279,6 +339,9 @@ def create_vaccination_record(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: VaccinationRecordSerializer(many=True)}
+)
 def get_all_vaccination_records(request):
     try:
         records = VaccinationRecord.objects.filter(cattle__farm=request.user.farm)
@@ -294,6 +357,10 @@ def get_all_vaccination_records(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Vaccination Record ID')],
+    responses={200: VaccinationRecordSerializer}
+)
 def get_vaccination_record_by_id(request, pk):
     record = get_object_or_404(VaccinationRecord, pk=pk, cattle__farm=request.user.farm)
     serializer = VaccinationRecordSerializer(record)
@@ -301,6 +368,11 @@ def get_vaccination_record_by_id(request, pk):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Vaccination Record ID')],
+    request_body=VaccinationRecordSerializer,
+    responses={200: VaccinationRecordSerializer}
+)
 def update_vaccination_record(request, pk):
     record = get_object_or_404(VaccinationRecord, pk=pk, cattle__farm=request.user.farm)
     serializer = VaccinationRecordSerializer(record, data=request.data)
@@ -311,6 +383,10 @@ def update_vaccination_record(request, pk):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Vaccination Record ID')],
+    responses={204: 'No Content'}
+)
 def delete_vaccination_record(request, pk):
     record = get_object_or_404(VaccinationRecord, pk=pk, cattle__farm=request.user.farm)
     record.delete()
@@ -319,6 +395,10 @@ def delete_vaccination_record(request, pk):
 # PeriodicVaccinationRecord Views
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=PeriodicVaccinationRecordSerializer,
+    responses={201: PeriodicVaccinationRecordSerializer}
+)
 def create_periodic_vaccination_record(request):
     data = request.data.copy()
     try:
@@ -358,6 +438,10 @@ def create_periodic_vaccination_record(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Filter by cattle ID')],
+    responses={200: PeriodicVaccinationRecordSerializer(many=True)}
+)
 def get_all_periodic_vaccination_records(request):
     cattle_id = request.query_params.get('cattle')
     if cattle_id:
@@ -375,6 +459,10 @@ def get_all_periodic_vaccination_records(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Periodic Vaccination Record ID')],
+    responses={200: PeriodicVaccinationRecordSerializer}
+)
 def get_periodic_vaccination_record_by_id(request, pk):
     record = get_object_or_404(PeriodicVaccinationRecord, pk=pk, cattle__farm=request.user.farm)
     serializer = PeriodicVaccinationRecordSerializer(record)
@@ -382,6 +470,11 @@ def get_periodic_vaccination_record_by_id(request, pk):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Periodic Vaccination Record ID')],
+    request_body=PeriodicVaccinationRecordSerializer,
+    responses={200: PeriodicVaccinationRecordSerializer}
+)
 def update_periodic_vaccination_record(request, pk):
     record = get_object_or_404(PeriodicVaccinationRecord, pk=pk, cattle__farm=request.user.farm)
     data = request.data.copy()
@@ -401,6 +494,10 @@ def update_periodic_vaccination_record(request, pk):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Periodic Vaccination Record ID')],
+    responses={204: 'No Content'}
+)
 def delete_periodic_vaccination_record(request, pk):
     record = get_object_or_404(PeriodicVaccinationRecord, pk=pk, cattle__farm=request.user.farm)
     record.delete()
@@ -409,6 +506,10 @@ def delete_periodic_vaccination_record(request, pk):
 # PeriodicTreatmentRecord Views
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=PeriodicTreatmentRecordSerializer,
+    responses={201: PeriodicTreatmentRecordSerializer}
+)
 def create_periodic_treatment_record(request):
     data = request.data.copy()
     try:
@@ -448,6 +549,9 @@ def create_periodic_treatment_record(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: PeriodicTreatmentRecordSerializer(many=True)}
+)
 def get_all_periodic_treatment_records(request):
     cattle_id = request.query_params.get('cattle')
     if cattle_id:
@@ -465,6 +569,10 @@ def get_all_periodic_treatment_records(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Periodic Treatment Record ID')],
+    responses={200: PeriodicTreatmentRecordSerializer}
+)
 def get_periodic_treatment_record_by_id(request, pk):
     record = get_object_or_404(PeriodicTreatmentRecord, pk=pk, cattle__farm=request.user.farm)
     serializer = PeriodicTreatmentRecordSerializer(record)
@@ -472,6 +580,11 @@ def get_periodic_treatment_record_by_id(request, pk):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Periodic Treatment Record ID')],
+    request_body=PeriodicTreatmentRecordSerializer,
+    responses={200: PeriodicTreatmentRecordSerializer}
+)
 def update_periodic_treatment_record(request, pk):
     record = get_object_or_404(PeriodicTreatmentRecord, pk=pk, cattle__farm=request.user.farm)
     data = request.data.copy()
@@ -491,6 +604,10 @@ def update_periodic_treatment_record(request, pk):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Periodic Treatment Record ID')],
+    responses={204: 'No Content'}
+)
 def delete_periodic_treatment_record(request, pk):
     record = get_object_or_404(PeriodicTreatmentRecord, pk=pk, cattle__farm=request.user.farm)
     record.delete()
@@ -499,6 +616,9 @@ def delete_periodic_treatment_record(request, pk):
 # Insemination Views
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: InseminationSerializer(many=True)}
+)
 def list_inseminations(request):
     inseminations = Insemination.objects.filter(cattle__farm=request.user.farm)
     serializer = InseminationSerializer(inseminations, many=True)
@@ -506,6 +626,10 @@ def list_inseminations(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=InseminationSerializer,
+    responses={201: InseminationSerializer}
+)
 def create_insemination(request):
     try:
         # Log the incoming request data for debugging
@@ -633,6 +757,11 @@ def send_alert_email(user, subject, message, priority):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Insemination ID')],
+    request_body=InseminationSerializer,
+    responses={200: InseminationSerializer}
+)
 def update_insemination(request, pk):
     try:
         insemination = Insemination.objects.get(pk=pk, cattle__farm=request.user.farm)
@@ -799,6 +928,9 @@ def update_insemination(request, pk):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: InseminationSerializer(many=True)}
+)
 def get_pending_pregnancy_checks(request):
     """Get all inseminations that need pregnancy confirmation"""
     pending_checks = Insemination.objects.filter(
@@ -811,6 +943,10 @@ def get_pending_pregnancy_checks(request):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Insemination ID')],
+    responses={204: 'No Content'}
+)
 def delete_insemination(request, pk):
     try:
         insemination = Insemination.objects.get(pk=pk, cattle__farm=request.user.farm)
@@ -822,6 +958,9 @@ def delete_insemination(request, pk):
 # BirthRecord Views
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: BirthRecordSerializer(many=True)}
+)
 def list_birth_records(request):
     """List all birth records for the farm"""
     birth_records = BirthRecord.objects.filter(cattle__farm=request.user.farm)
@@ -830,6 +969,10 @@ def list_birth_records(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Birth Record ID')],
+    responses={200: BirthRecordSerializer}
+)
 def get_birth_record(request, pk):
     """Get a specific birth record"""
     try:
@@ -841,6 +984,10 @@ def get_birth_record(request, pk):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=BirthRecordSerializer,
+    responses={201: BirthRecordSerializer}
+)
 def create_birth_record(request):
     """Create a new birth record with automatic calf registration"""
     try:
@@ -883,6 +1030,11 @@ def create_birth_record(request):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Birth Record ID')],
+    request_body=BirthRecordSerializer,
+    responses={200: BirthRecordSerializer}
+)
 def update_birth_record(request, pk):
     """Update an existing birth record"""
     try:
@@ -910,6 +1062,10 @@ def update_birth_record(request, pk):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('pk', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Birth Record ID')],
+    responses={204: 'No Content'}
+)
 def delete_birth_record(request, pk):
     """Delete a birth record"""
     try:
@@ -938,6 +1094,10 @@ def delete_birth_record(request, pk):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: BirthRecordSerializer(many=True)}
+)
 def get_cattle_birth_history(request, cattle_id):
     """Get birth history for a specific cattle (both as mother and as calf)"""
     try:    
@@ -970,6 +1130,14 @@ def get_cattle_birth_history(request, cattle_id):
 # Alert Views
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[
+        openapi.Parameter('type', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='Filter by alert type'),
+        openapi.Parameter('read', openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN, description='Filter by read status'),
+        openapi.Parameter('priority', openapi.IN_QUERY, type=openapi.TYPE_STRING, description='Filter by priority'),
+    ],
+    responses={200: AlertSerializer(many=True)}
+)
 def list_alerts(request):
     """
     Get all alerts for the user's farm.
@@ -1013,6 +1181,9 @@ def list_alerts(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: AlertSerializer(many=True)}
+)
 def get_unread_alerts(request):
     """Get all unread alerts for the user's farm."""
     try:
@@ -1034,6 +1205,10 @@ def get_unread_alerts(request):
 
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('alert_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Alert ID')],
+    responses={200: AlertSerializer}
+)
 def mark_alert_as_read(request, alert_id):
     """Mark a specific alert as read."""
     try:
@@ -1051,6 +1226,9 @@ def mark_alert_as_read(request, alert_id):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: 'All alerts marked as read'}
+)
 def mark_all_alerts_as_read(request):
     """Mark all alerts for the user's farm as read."""
     try:
@@ -1065,6 +1243,10 @@ def mark_all_alerts_as_read(request):
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('alert_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Alert ID')],
+    responses={204: 'No Content'}
+)
 def delete_alert(request, alert_id):
     """Delete a specific alert."""
     try:
@@ -1080,6 +1262,9 @@ def delete_alert(request, alert_id):
 # Farm Views
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    responses={200: FarmSerializer(many=True)}
+)
 def get_farms(request):
     farms = Farm.objects.all()
     serializer = FarmSerializer(farms, many=True)
@@ -1087,6 +1272,10 @@ def get_farms(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=FarmSerializer,
+    responses={201: FarmSerializer}
+)
 def create_farm(request):
     serializer = FarmSerializer(data=request.data)
     if serializer.is_valid():
@@ -1100,6 +1289,10 @@ def create_farm(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: openapi.Response('Health records')}
+)
 def get_cattle_health_records(request, cattle_id=None):
     try:
         if cattle_id:
@@ -1151,6 +1344,10 @@ def get_cattle_health_records(request, cattle_id=None):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    request_body=GestationCheckSerializer,
+    responses={201: GestationCheckSerializer}
+)
 def create_gestation_check(request):
     """Create a new gestation check record"""
     try:
@@ -1201,6 +1398,11 @@ def create_gestation_check(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('milestone_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Milestone ID')],
+    request_body=GestationMilestoneSerializer,
+    responses={200: GestationMilestoneSerializer}
+)
 def update_milestone(request, milestone_id):
     """Update a gestation milestone"""
     try:
@@ -1235,6 +1437,10 @@ def update_milestone(request, milestone_id):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@swagger_auto_schema(
+    manual_parameters=[openapi.Parameter('cattle_id', openapi.IN_PATH, type=openapi.TYPE_INTEGER, description='Cattle ID')],
+    responses={200: openapi.Response('Gestation timeline')}
+)
 def get_cattle_gestation_timeline(request, cattle_id):
     """Get detailed gestation timeline for a specific cattle"""
     try:

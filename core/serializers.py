@@ -33,17 +33,37 @@ class CattleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cattle
         fields = [
-            'id', 'ear_tag_no', 'breed', 'birth_date', 'gender', 'life_stage',
-            'dam_id', 'sire_id', 'is_purchased', 'purchase_date', 'purchase_source',
+            'id', 'ear_tag_no', 'breed', 'birth_date', 'birth_weight', 'current_weight',
+            'weaning_date', 'weaning_weight', 'gender', 'life_stage', 'life_stage_started_at',
+            'is_service_bull', 'dam_id', 'sire_id', 'is_purchased', 'purchase_date', 'purchase_source',
             'last_insemination_date', 'last_calving_date', 'expected_calving_date',
             'expected_insemination_date', 'gestation_status', 'gestation_stage',
             'health_status', 'photo', 'created_at', 'updated_at', 'farm'
         ]
+        read_only_fields = ('farm', 'created_at', 'updated_at', 'life_stage_started_at')
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if instance.photo:
             data['photo'] = self.context['request'].build_absolute_uri(instance.photo.url)
+        return data
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        gender = data.get('gender', getattr(self.instance, 'gender', None))
+        life_stage = data.get('life_stage', getattr(self.instance, 'life_stage', None))
+
+        if 'is_service_bull' in data:
+            is_service_bull = data['is_service_bull']
+        else:
+            is_service_bull = getattr(self.instance, 'is_service_bull', False)
+
+        if gender == 'male' and not is_service_bull and life_stage and life_stage != 'calf':
+            raise serializers.ValidationError({
+                'life_stage': 'Male cattle stay in calf stage unless flagged as a service bull.'
+            })
+
         return data
 
 class InseminationSerializer(serializers.ModelSerializer):
